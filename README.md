@@ -3,9 +3,9 @@
 The following will install Knative Kafka and configure it
 appropriately for your cluster in the `default` namespace:
 
-    kubectl apply -f deploy/crds/eventing_v1alpha1_kafka_install_crd.yaml
+    kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_crd.yaml
     kubectl apply -f deploy/
-    kubectl apply -f deploy/crds/eventing_v1alpha1_kafka_install_cr.yaml
+    kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_cr.yaml
 
 ## Prerequisites
 
