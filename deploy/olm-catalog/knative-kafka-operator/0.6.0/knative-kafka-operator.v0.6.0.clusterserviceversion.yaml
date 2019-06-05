@@ -132,6 +132,14 @@ spec:
     type: MultiNamespace
   - supported: true
     type: AllNamespaces
+  keywords:
+  - serverless
+  - eventing
+  - kafka
+  maintainers:
+  - email: knative@redhat.com
+    name: Knative team
   maturity: alpha
-  provider: {}
+  provider:
+    name: Knative Community
   version: 0.6.0
