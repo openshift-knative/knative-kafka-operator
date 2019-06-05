@@ -22,6 +22,15 @@ spec:
     url: https://www.knative.dev/docs/
   install:
     spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - '*'
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        serviceAccountName: knative-kafka-operator
       deployments:
       - name: knative-kafka-operator
         spec:
