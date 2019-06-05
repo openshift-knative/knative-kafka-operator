@@ -150,6 +150,7 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 		mf.InjectOwner(instance),
 		mf.InjectNamespace(instance.GetNamespace()),
 		addSCCforSpecialClusterRoles,
+		bootstrapServersTransformer(instance.Spec.BootstrapServers),
 	}
 	r.config.Transform(fns...)
 
@@ -239,4 +240,13 @@ func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
 		}), "rules")
 	}
 	return nil
+}
+
+func bootstrapServersTransformer(bootstrapServers string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		if u.GetKind() == "ConfigMap" && u.GetName() == "kafka-channel-controller-config" {
+			unstructured.SetNestedField(u.Object, bootstrapServers, "data", "bootstrap_servers")
+		}
+		return nil
+	}
 }

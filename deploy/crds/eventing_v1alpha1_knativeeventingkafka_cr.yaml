@@ -3,5 +3,4 @@ kind: KnativeEventingKafka
 metadata:
   name: example-knativeeventingkafka
 spec:
-  # Add fields here
-  size: 3
+  bootstrapServers: "my-cluster-kafka-bootstrap.kafka:9092"
