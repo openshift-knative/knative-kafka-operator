@@ -155,6 +155,6 @@ apiVersion: eventing.knative.dev/v1alpha1
 kind: KnativeEventingKafka
 metadata:
   name: knative-eventing-kafka
-  namespace: knative-eventing-kafka
+  namespace: knative-eventing
 EOF
 ```
