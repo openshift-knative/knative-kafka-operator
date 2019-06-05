@@ -1,0 +1,6 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: KnativeEventingKafka
+metadata:
+  name: example-knativeeventingkafka
+spec:
+  bootstrapServers: "my-cluster-kafka-bootstrap.kafka:9092"
