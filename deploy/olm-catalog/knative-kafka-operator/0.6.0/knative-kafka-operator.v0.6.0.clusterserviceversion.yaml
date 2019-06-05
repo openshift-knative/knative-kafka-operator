@@ -15,6 +15,11 @@ spec:
       version: v1alpha1
   description: Placeholder description
   displayName: Knative Kafka Operator
+  links:
+  - name: Website
+    url: https://www.knative.dev/docs/eventing/
+  - name: Documentation
+    url: https://www.knative.dev/docs/
   install:
     spec:
       deployments:
@@ -37,7 +42,7 @@ spec:
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
-                      fieldPath: metadata.namespace
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: POD_NAME
                   valueFrom:
                     fieldRef:

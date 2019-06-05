@@ -69,7 +69,7 @@ The remaining sections only apply if you wish to create the metadata
 required by the [Operator Lifecycle
 Manager](https://github.com/operator-framework/operator-lifecycle-manager)
 
-### Create a CatalogSource
+### Create a ClusterServiceVersion
 
 The OLM requires special manifests that the operator-sdk can help
 generate.
@@ -88,10 +88,18 @@ some post-editing of the file it generates may be required:
 
 * Add fields to address any warnings it reports
 * Verify `description` and `displayName` fields for all owned CRD's
-* Set the `fieldPath` for `WATCH_NAMESPACE` to `metadata.annotations['olm.targetNamespaces']`
+
+### Create a CatalogSource
 
 The [catalog.sh](hack/catalog.sh) script should yield a valid
-`CatalogSource` for you to publish.
+`ConfigMap` and `CatalogSource` comprised of the
+`ClusterServiceVersions`, `CustomResourceDefinitions`, and package
+manifest in the bundle beneath
+[deploy/olm-catalog](deploy/olm-catalog/). You should apply its output
+in the OLM namespace:
+
+    OLM=$(kubectl get pods --all-namespaces | grep olm-operator | head -1 | awk '{print $1}')
+    ./hack/catalog.sh | kubectl apply -n $OLM -f -
 
 ### Using OLM on Minikube
 
@@ -105,7 +113,7 @@ installing OLM on it:
 Once all the pods in the `olm` namespace are running, install the
 operator like so:
     
-    ./hack/catalog.sh | kubectl apply -n olm -f -
+    ./hack/catalog.sh | kubectl apply -n $OLM -f -
 
 Interacting with OLM is possible using `kubectl` but the OKD console
 is "friendlier". If you have docker installed, use [this
@@ -139,7 +147,7 @@ metadata:
   namespace: knative-eventing
 spec:
   source: knative-kafka-operator
-  sourceNamespace: olm
+  sourceNamespace: $OLM
   name: knative-kafka-operator
   channel: alpha
 ---

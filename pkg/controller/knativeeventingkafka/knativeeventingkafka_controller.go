@@ -208,15 +208,9 @@ func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
 
 	// these do need some openshift specific SCC
 	clusterRoles := []string{
-		"addressable-resolver",
-		"broker-addressable-resolver",
-		"channel-addressable-resolver",
-		"eventing-broker-filter",
-		"in-memory-channel-controller",
-		"in-memory-channel-dispatcher",
-		"knative-eventing-controller",
-		"knative-eventing-webhook",
-		"serving-addressable-resolver",
+		"eventing-sources-kafka-controller",
+		"kafka-channel-controller",
+		"kafka-channel-dispatcher",
 	}
 
 	matchesClusterRole := func(cr string) bool {
