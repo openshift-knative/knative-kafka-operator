@@ -10,7 +10,9 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - kind: KnativeEventingKafka
+    - description: Represents an installation of a particular version of Knative Kafka components
+      displayName: Knative Kafka
+      kind: KnativeEventingKafka
       name: knativeeventingkafkas.eventing.knative.dev
       version: v1alpha1
   description: Placeholder description
