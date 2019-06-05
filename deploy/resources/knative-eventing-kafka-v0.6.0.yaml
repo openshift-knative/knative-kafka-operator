@@ -75,7 +75,7 @@ subjects:
 ---
 apiVersion: v1
 data:
-  bootstrap_servers: my-cluster-kafka-bootstrap.kafka:9092
+  bootstrap_servers: REPLACE_WITH_CLUSTER_URL
 kind: ConfigMap
 metadata:
   name: kafka-channel-controller-config

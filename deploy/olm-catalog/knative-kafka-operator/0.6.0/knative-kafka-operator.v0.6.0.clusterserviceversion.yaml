@@ -1,0 +1,121 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[{"apiVersion":"eventing.knative.dev/v1alpha1","kind":"KnativeEventingKafka","metadata":{"name":"example-knativeeventingkafka"},"spec":{"bootstrapServers":"my-cluster-kafka-bootstrap.kafka:9092"}}]'
+    capabilities: Basic Install
+  name: knative-kafka-operator.v0.6.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: KnativeEventingKafka
+      name: knativeeventingkafkas.eventing.knative.dev
+      version: v1alpha1
+  description: Placeholder description
+  displayName: Knative Kafka Operator
+  install:
+    spec:
+      deployments:
+      - name: knative-kafka-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: knative-kafka-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: knative-kafka-operator
+            spec:
+              containers:
+              - command:
+                - knative-kafka-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: knative-kafka-operator
+                image: quay.io/openshift-knative/knative-kafka-operator:v0.6.0
+                imagePullPolicy: Always
+                name: knative-kafka-operator
+                resources: {}
+              serviceAccountName: knative-kafka-operator
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - apps
+          resourceNames:
+          - knative-kafka-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - serving.knative.dev
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - eventing.knative.dev
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        serviceAccountName: knative-kafka-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  maturity: alpha
+  provider: {}
+  version: 0.6.0
