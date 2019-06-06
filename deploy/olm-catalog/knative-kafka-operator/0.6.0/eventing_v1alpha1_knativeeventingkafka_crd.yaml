@@ -36,7 +36,7 @@ spec:
             bootstrap-servers:
               description: URI(s) of Apache Kafka broker(s)
               type: string
-	      minLength: 1
+              minLength: 1
           type: object
         status:
           properties:
