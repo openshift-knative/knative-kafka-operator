@@ -30,10 +30,11 @@ spec:
         metadata:
           type: object
         spec:
+          required:
+            - bootstrapServers
           properties:
             bootstrapServers:
               description: URI(s) of Apache Kafka broker(s)
-                configmaps
               type: string
           type: object
         status:
