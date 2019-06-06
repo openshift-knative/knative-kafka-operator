@@ -31,11 +31,12 @@ spec:
           type: object
         spec:
           required:
-            - bootstrapServers
+            - bootstrap-servers
           properties:
-            bootstrapServers:
+            bootstrap-servers:
               description: URI(s) of Apache Kafka broker(s)
               type: string
+	      minLength: 1
           type: object
         status:
           properties:
