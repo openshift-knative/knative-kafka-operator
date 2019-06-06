@@ -20,7 +20,9 @@ type KnativeEventingKafkaSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
-	BootstrapServers string `json:"bootstrapServers"`
+	BootstrapServers               string `json:"bootstrapServers"`
+	// +optional
+	SetAsDefaultChannelProvisioner bool   `json:"setAsDefaultChannelProvisioner,omitempty"`
 }
 
 // KnativeEventingKafkaStatus defines the observed state of KnativeEventingKafka
