@@ -9,6 +9,16 @@ appropriately for your cluster in the `default` namespace:
 
 ## Prerequisites
 
+### Apache Kafka
+
+This Operator install components that access Apache Kafka, therefore you MUST to have a running
+cluster of Apache Kafka _somewhere_.
+
+   - For Kubernetes a simple installation is done using the
+     [Strimzi Kafka Operator](http://strimzi.io). Its installation
+     [guides](http://strimzi.io/quickstarts/) provide content for Kubernetes and
+     Openshift.
+
 ### Operator SDK
 
 This operator was created using the
@@ -156,5 +166,7 @@ kind: KnativeEventingKafka
 metadata:
   name: knative-eventing-kafka
   namespace: knative-eventing
+spec:
+  bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
 EOF
 ```
