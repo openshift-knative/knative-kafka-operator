@@ -166,8 +166,8 @@ spec:
     url: https://www.knative.dev/docs/
   maintainers:
   - email: knative@redhat.com
-    name: Knative team
+    name: Knative team at Red Hat
   maturity: alpha
   provider:
-    name: Knative Community
+    name: Red Hat
   version: 0.6.0
