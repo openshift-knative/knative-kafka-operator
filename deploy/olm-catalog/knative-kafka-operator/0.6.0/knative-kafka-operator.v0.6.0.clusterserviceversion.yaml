@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"eventing.knative.dev/v1alpha1","kind":"KnativeEventingKafka","metadata":{"name":"example-knativeeventingkafka"},"spec":{"bootstrapServers":"my-cluster-kafka-bootstrap.kafka:9092"}}]'
+    alm-examples: '[{"apiVersion":"eventing.knative.dev/v1alpha1","kind":"KnativeEventingKafka","metadata":{"name":"example-knativeeventingkafka"},"spec":{"bootstrapServers":"my-cluster-kafka-bootstrap.kafka:9092","setAsDefaultChannelProvisioner":true}}]'
     capabilities: Basic Install
   name: knative-kafka-operator.v0.6.0
   namespace: placeholder
