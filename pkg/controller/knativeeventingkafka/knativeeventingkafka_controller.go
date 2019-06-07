@@ -3,6 +3,7 @@ package knativeeventingkafka
 import (
 	"context"
 	"flag"
+	go_errors "errors"
 
 	mf "github.com/jcrossley3/manifestival"
 	eventingv1alpha1 "github.com/openshift-knative/knative-kafka-operator/pkg/apis/eventing/v1alpha1"
@@ -165,6 +166,11 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 		return err
 	}
 
+	if err := r.setAsDefaultChannelProvisioner(
+		instance.Spec.SetAsDefaultChannelProvisioner); err != nil {
+		return err
+	}
+
 	// Update status
 	instance.Status.Version = version.Version
 	instance.Status.MarkInstallSucceeded()
@@ -202,6 +208,31 @@ func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alp
 	}
 	instance.Status.MarkDeploymentsAvailable()
 	return nil
+}
+
+func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet bool) error {
+	key := client.ObjectKey{Namespace: "knative-eventing", Name: "default-channel-webhook"}
+	result := &unstructured.Unstructured{}
+	result.SetAPIVersion("v1");
+	result.SetKind("ConfigMap");
+	if err := r.client.Get(context.TODO(), key, result); err != nil {
+		return err
+	}
+	configMapData := result.Object["data"];
+	configMap, ok := configMapData.(map[string]interface{})
+	if !ok {
+		return go_errors.New("Unexpected structure of knative-eventing/default-channel-webhook ConfigMap")
+	}
+	defaultChannelConfigValue := "clusterdefault:\n  apiversion: eventing.knative.dev/v1alpha1\n  kind: ClusterChannelProvisioner\n  name: "
+	if doSet {
+		defaultChannelConfigValue += `kafka`
+	} else {
+		defaultChannelConfigValue += `in-memory`
+	}
+	defaultChannelConfigValue += "\n"
+	configMap["default-channel-config"] = defaultChannelConfigValue
+	err := r.config.Apply(result)
+	return err
 }
 
 func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {

@@ -37,6 +37,10 @@ spec:
               description: URI(s) of Apache Kafka broker(s)
               type: string
               minLength: 1
+            setAsDefaultChannelProvisioner:
+              description: flag that controls whether Kafka channel provisioner is
+                configured as the cluster default. Defaults to false.
+              type: boolean
           type: object
         status:
           properties:
