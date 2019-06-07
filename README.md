@@ -168,5 +168,6 @@ metadata:
   namespace: knative-eventing
 spec:
   bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
+  #setAsDefaultChannelProvisioner: yes
 EOF
 ```
