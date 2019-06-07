@@ -223,7 +223,7 @@ func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet boo
 	if !ok {
 		return go_errors.New("Unexpected structure of knative-eventing/default-channel-webhook ConfigMap")
 	}
-	defaultChannelConfigValue := "apiversion: eventing.knative.dev/v1alpha1\nkind: ClusterChannelProvisioner\nname: "
+	defaultChannelConfigValue := "clusterdefault:\n  apiversion: eventing.knative.dev/v1alpha1\n  kind: ClusterChannelProvisioner\n  name: "
 	if doSet {
 		defaultChannelConfigValue += `kafka`
 	} else {
