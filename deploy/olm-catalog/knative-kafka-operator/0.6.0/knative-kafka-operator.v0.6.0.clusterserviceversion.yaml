@@ -4,6 +4,14 @@ metadata:
   annotations:
     alm-examples: '[{"apiVersion":"eventing.knative.dev/v1alpha1","kind":"KnativeEventingKafka","metadata":{"name":"example-knativeeventingkafka"},"spec":{"bootstrapServers":"my-cluster-kafka-bootstrap.kafka:9092","setAsDefaultChannelProvisioner":true}}]'
     capabilities: Basic Install
+    categories: Networking,Integration & Delivery,Cloud Provider,Developer Tools
+    certified: "false"
+    containerImage: quay.io/openshift-knative/knative-kafka-operator:v0.6.0
+    createdAt: "2019-06-07T14:00:00Z"
+    description: |-
+      Knative Eventing Kafka manages the Kafka source and channel provisioner for Knative Eventing
+    repository: https://github.com/openshift-knative/knative-kafka-operator
+    support: Red Hat
   name: knative-kafka-operator.v0.6.0
   namespace: placeholder
 spec:
