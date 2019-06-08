@@ -18,14 +18,25 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents an installation of a Knative components for Apache Kafka
+    - name: knativeeventingkafkas.eventing.knative.dev
+      description: Represents an installation of a Knative components for Apache Kafka
       displayName: Knative components for Apache Kafka
       kind: KnativeEventingKafka
-      name: knativeeventingkafkas.eventing.knative.dev
       statusDescriptors:
-      - description: The version of Knative Eventing installed
+      - path: version
+        description: The version of Knative Eventing Kafka installed
         displayName: Version
-        path: version
+      - path: conditions
+        description: The latest available observations of a resource's current state
+        displayName: conditions
+      specDescriptors:
+      - path: bootstrapServers
+        displayName: bootstrapServers
+        description: 'URI(s) of Apache Kafka broker(s)'
+      - path: setAsDefaultChannelProvisioner
+        displayName: setAsDefaultChannelProvisioner
+        description: 'Flag that controls whether Kafka channel provisioner is
+                configured as the cluster default. Defaults to false.'
       version: v1alpha1
   description: |
     Apache Kafka is a distributed streaming platform and this operator adds support for
