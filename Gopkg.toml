@@ -65,10 +65,6 @@ required = [
   name = "github.com/jcrossley3/manifestival"
   branch = "master"
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/openshift/cluster-network-operator"
-
 [prune]
   go-tests = true
   non-go = true
