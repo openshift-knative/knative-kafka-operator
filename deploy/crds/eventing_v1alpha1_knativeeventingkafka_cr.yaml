@@ -1,7 +1,7 @@
 apiVersion: eventing.knative.dev/v1alpha1
 kind: KnativeEventingKafka
 metadata:
-  name: example-knativeeventingkafka
+  name: knative-eventing-kafka
 spec:
   bootstrapServers: "my-cluster-kafka-bootstrap.kafka:9092"
   setAsDefaultChannelProvisioner: yes
