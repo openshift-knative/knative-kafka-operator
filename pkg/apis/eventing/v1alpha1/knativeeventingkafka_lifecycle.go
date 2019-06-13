@@ -64,3 +64,10 @@ func (is *KnativeEventingKafkaStatus) MarkDeploymentsNotReady() {
 		"NotReady",
 		"Waiting on deployments")
 }
+
+func (is *KnativeEventingKafkaStatus) MarkIgnored(msg string) {
+	conditions.Manage(is).MarkFalse(
+		InstallSucceeded,
+		"Ignored",
+		"Install not attempted: %s", msg)
+}

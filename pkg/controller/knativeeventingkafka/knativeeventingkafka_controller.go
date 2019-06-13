@@ -3,6 +3,7 @@ package knativeeventingkafka
 import (
 	"context"
 	"flag"
+	"fmt"
 	go_errors "errors"
 
 	mf "github.com/jcrossley3/manifestival"
@@ -23,6 +24,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	ns = "knative-eventing"
+	cr = "knative-eventing-kafka"
+)
+
 var (
 	filename = flag.String("filename", "deploy/resources",
 		"The filename containing the YAML resources to apply")
@@ -34,16 +40,12 @@ var (
 // Add creates a new KnativeEventingKafka Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	manifest, err := mf.NewManifest(*filename, *recursive, mgr.GetClient())
-	if err != nil {
-		return err
-	}
-	return add(mgr, newReconciler(mgr, manifest))
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, man mf.Manifest) reconcile.Reconciler {
-	return &ReconcileKnativeEventingKafka{client: mgr.GetClient(), scheme: mgr.GetScheme(), config: man}
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	return &ReconcileKnativeEventingKafka{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -54,7 +56,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource KnativeEventing
+	// Watch for changes to primary resource KnativeEventingKafka
 	err = c.Watch(&source.Kind{Type: &eventingv1alpha1.KnativeEventingKafka{}}, &handler.EnqueueRequestForObject{}, predicate.GenerationChangedPredicate{})
 	if err != nil {
 		return err
@@ -74,7 +76,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileKnativeEventingKafka{}
 
-// ReconcileKnativeEventing reconciles a KnativeEventing object
+// ReconcileKnativeEventingKafka reconciles a KnativeEventingKafka object
 type ReconcileKnativeEventingKafka struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
@@ -83,8 +85,18 @@ type ReconcileKnativeEventingKafka struct {
 	config mf.Manifest
 }
 
-// Reconcile reads that state of the cluster for a KnativeEventing object and makes changes based on the state read
-// and what is in the KnativeEventing.Spec
+// Create manifestival resources and KnativeEventingKafka, if necessary
+func (r *ReconcileKnativeEventingKafka) InjectClient(c client.Client) error {
+	m, err := mf.NewManifest(*filename, *recursive, c)
+	if err != nil {
+		return err
+	}
+	r.config = m
+	return r.ensureKnativeEventingKafka()
+}
+
+// Reconcile reads that state of the cluster for a KnativeEventingKafka object and makes changes based on the state read
+// and what is in the KnativeEventingKafka.Spec
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -92,16 +104,25 @@ func (r *ReconcileKnativeEventingKafka) Reconcile(request reconcile.Request) (re
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling KnativeEventingKafka")
 
-	// Fetch the KnativeEventing instance
+	// Fetch the KnativeEventingKafka instance
 	instance := &eventingv1alpha1.KnativeEventingKafka{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			r.config.DeleteAll()
+			if isInteresting(request) {
+				r.config.DeleteAll()
+			} else {
+				log.Info("Ignoring KnativeEventingKafka", "namespace", request.Namespace, "name", request.Name)
+			}			
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if !isInteresting(request) {
+		log.Info("Ignoring KnativeEventingKafka", "namespace", instance.GetNamespace(), "name", instance.GetName())
+		return reconcile.Result{}, r.ignore(instance)
 	}
 
 	// stages hook for future work (e.g. deleteObsoleteResources)
@@ -174,6 +195,7 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 	// Update status
 	instance.Status.Version = version.Version
 	instance.Status.MarkInstallSucceeded()
+	log.Info("Install succeeded", "version", version.Version)
 	return nil
 }
 
@@ -207,11 +229,12 @@ func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alp
 		}
 	}
 	instance.Status.MarkDeploymentsAvailable()
+	log.Info("All deployments are available")
 	return nil
 }
 
 func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet bool) error {
-	key := client.ObjectKey{Namespace: "knative-eventing", Name: "default-channel-webhook"}
+	key := client.ObjectKey{Namespace: ns, Name: "default-channel-webhook"}
 	result := &unstructured.Unstructured{}
 	result.SetAPIVersion("v1");
 	result.SetKind("ConfigMap");
@@ -233,6 +256,43 @@ func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet boo
 	configMap["default-channel-config"] = defaultChannelConfigValue
 	err := r.config.Apply(result)
 	return err
+}
+
+// Reflect our ignorance in the KnativeEventingKafka status
+func (r *ReconcileKnativeEventingKafka) ignore(instance *eventingv1alpha1.KnativeEventingKafka) (err error) {
+	err = r.initStatus(instance)
+	if err == nil {
+		msg := fmt.Sprintf("The only KnativeEventingKafka resource monitored is %s/%s", ns, cr)
+		instance.Status.MarkIgnored(msg)
+		err = r.updateStatus(instance)
+	}
+	return
+}
+
+// If we can't find knative-eventing/knative-eventing-kafka, create it
+func (r *ReconcileKnativeEventingKafka) ensureKnativeEventingKafka() (err error) {
+	const path = "deploy/crds/eventing_v1alpha1_knativeeventingkafka_cr.yaml"
+	instance := &eventingv1alpha1.KnativeEventingKafka{}
+	key := client.ObjectKey{Namespace: ns, Name: cr}
+	if err = r.client.Get(context.TODO(), key, instance); err != nil {
+		var manifest mf.Manifest
+		manifest, err = mf.NewManifest(path, false, r.client)
+		if err == nil {
+			// assume the "knative-eventing" namespace exists
+			// since Eventing's been installed
+			err = manifest.Transform(mf.InjectNamespace(ns))
+		}
+		if err == nil {
+			err = manifest.ApplyAll()
+		}
+	}
+	return
+}
+
+// Because it's effectively cluster-scoped, we only care about a
+// single, named resource: knative-eventing/knative-eventing-kafka
+func isInteresting(request reconcile.Request) bool {
+	return request.Namespace == ns && request.Name == cr
 }
 
 func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
