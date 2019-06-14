@@ -17,6 +17,11 @@ metadata:
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
+    required:
+    - name: knativeeventings.eventing.knative.dev
+      description: Represents an installation of a Knative Eventing
+      displayName: Knative Eventing
+      kind: KnativeEventing
     owned:
     - name: knativeeventingkafkas.eventing.knative.dev
       description: Represents an installation of a Knative components for Apache Kafka
