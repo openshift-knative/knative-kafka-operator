@@ -11,7 +11,7 @@ appropriately for your cluster in the `default` namespace:
 
 ### Apache Kafka
 
-This Operator install components that access Apache Kafka, therefore you MUST to have a running
+This operator installs components that access Apache Kafka, therefore you MUST have a running
 cluster of Apache Kafka _somewhere_.
 
    - For Kubernetes a simple installation is done using the
@@ -48,7 +48,7 @@ It can be convenient to run the operator outside of the cluster to
 test changes. The following command will build the operator and use
 your current "kube config" to connect to the cluster:
 
-    operator-sdk up local
+    operator-sdk up local --namespace=""
 
 Pass `--help` for further details on the various `operator-sdk`
 subcommands, and pass `--help` to the operator itself to see its
@@ -138,23 +138,12 @@ the following resources:
 ```
 cat <<-EOF | kubectl apply -f -
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: knative-eventing
----
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: knative-eventing
-  namespace: knative-eventing
----
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: knative-kafka-operator-sub
   generateName: knative-kafka-operator-
-  namespace: knative-eventing
+  namespace: $OPERATOR_NS
 spec:
   source: knative-kafka-operator
   sourceNamespace: $OLM
@@ -165,7 +154,6 @@ apiVersion: eventing.knative.dev/v1alpha1
 kind: KnativeEventingKafka
 metadata:
   name: knative-eventing-kafka
-  namespace: knative-eventing
 spec:
   bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
   #setAsDefaultChannelProvisioner: yes
