@@ -1,35 +1,23 @@
 # Knative Kafka Operator
 
-The following will install the Knative Kafka operator in the `default` namespace:
+The following will install Knative Kafka and configure it
+appropriately for your cluster in the `default` namespace:
 
-```
-kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_crd.yaml
-kubectl apply -f deploy/
-```
-
-The operator will then install and configure Knative Kafka appropriately for your
-cluster in the `knative-eventing` namespace.
+    kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_crd.yaml
+    kubectl apply -f deploy/
+    kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_cr.yaml
 
 ## Prerequisites
 
 ### Apache Kafka
 
-This operator installs components that access Apache Kafka, therefore you MUST have a running
+This Operator install components that access Apache Kafka, therefore you MUST to have a running
 cluster of Apache Kafka _somewhere_.
 
    - For Kubernetes a simple installation is done using the
      [Strimzi Kafka Operator](http://strimzi.io). Its installation
      [guides](http://strimzi.io/quickstarts/) provide content for Kubernetes and
-     OpenShift.
-
-### KnativeEventingKafka configuration
-
-Please review the [`KnativeEventingKafka` custom
-resource](deploy/crds/eventing_v1alpha1_kafka_install_cr.yaml)
-for available configuration options for the Kafka channel provisioner:
-* __bootstrapServers__: URI(s) of Apache Kafka broker(s). Mandatory.
-* __setAsDefaultChannelProvisioner__: Flag that controls whether Kafka channel provisioner is
-configured as the cluster default. If not specified, defaults to false.
+     Openshift.
 
 ### Operator SDK
 
@@ -41,23 +29,18 @@ It's not strictly required but does provide some handy tooling.
 
 The installation of Knative Kafka is triggered by the creation of
 [an `KnativeEventingKafka` custom
-resource](deploy/crds/eventing_v1alpha1_kafka_install_cr.yaml).
-When it starts, the operator will _automatically_ create one of these in
-the `knative-eventing` namespace if it doesn't already exist.
+resource](deploy/crds/eventing_v1alpha1_kafka_install_crd.yaml).
 
-The following are all equivalent:
+The following are all equivalent, but the latter may suffer from name
+conflicts.
 
-```
-kubectl get knativeventingkafka.eventing.knative.dev -n knative-eventing -oyaml
-kubectl get kek -n knative-eventing -oyaml
-kubectl get knativeventingkafka -n knative-eventing -oyaml
-```
+    kubectl get knativeventingkafka.eventing.knative.dev -oyaml
+    kubectl get kek -oyaml
+    kubectl get knativeventingkafka -oyaml
 
 To uninstall Knative Kafka, simply delete the `KnativeEventingKafka` resource.
 
-```
-kubectl delete kek -n knative-eventing --all
-```
+    kubectl delete kek --all
 
 ## Development
 
@@ -65,26 +48,19 @@ It can be convenient to run the operator outside of the cluster to
 test changes. The following command will build the operator and use
 your current "kube config" to connect to the cluster:
 
-```
-operator-sdk up local --namespace=""
-```
+    operator-sdk up local
 
 Pass `--help` for further details on the various `operator-sdk`
 subcommands, and pass `--help` to the operator itself to see its
 available options:
 
-```
-operator-sdk up local --operator-flags "--help"
-```
-
+    operator-sdk up local --operator-flags "--help"
 
 ### Building the Operator Image
 
-To build the operator run,
+To build the operator,
 
-```
-operator-sdk build quay.io/$REPO/knative-kafka-operator:$VERSION
-```
+    operator-sdk build quay.io/$REPO/knative-kafka-operator:$VERSION
 
 The image should match what's in
 [deploy/operator.yaml](deploy/operator.yaml) and the `$VERSION` should
@@ -95,10 +71,8 @@ There is a handy script that will build and push an image to
 [quay.io](https://quay.io/repository/openshift-knative/knative-kafka-operator)
 and tag the source:
 
-```
-./hack/release.sh
-```
-
+    ./hack/release.sh
+	
 ## Operator Framework
 
 The remaining sections only apply if you wish to create the metadata
@@ -114,12 +88,10 @@ Create a `ClusterServiceVersion` for the version that corresponds to
 the manifest[s] beneath [deploy/resources](deploy/resources/). The
 `$PREVIOUS_VERSION` is the CSV yours will replace.
 
-```
-operator-sdk olm-catalog gen-csv \
+    operator-sdk olm-catalog gen-csv \
         --csv-version $VERSION \
         --from-version $PREVIOUS_VERSION \
         --update-crds
-```
 
 Most values should carry over, but if you're starting from scratch,
 some post-editing of the file it generates may be required:
@@ -136,10 +108,8 @@ manifest in the bundle beneath
 [deploy/olm-catalog](deploy/olm-catalog/). You should apply its output
 in the OLM namespace:
 
-```
-OLM=$(kubectl get pods --all-namespaces | grep olm-operator | head -1 | awk '{print $1}')
-./hack/catalog.sh | kubectl apply -n $OLM -f -
-```
+    OLM=$(kubectl get pods --all-namespaces | grep olm-operator | head -1 | awk '{print $1}')
+    ./hack/catalog.sh | kubectl apply -n $OLM -f -
 
 ### Using OLM on Minikube
 
@@ -147,17 +117,13 @@ You can test the operator using
 [minikube](https://kubernetes.io/docs/setup/minikube/) after
 installing OLM on it:
 
-```
-minikube start
-kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.9.0/olm.yaml
-```
+    minikube start
+    kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.9.0/olm.yaml
 
 Once all the pods in the `olm` namespace are running, install the
 operator like so:
-
-```
-./hack/catalog.sh | kubectl apply -n $OLM -f -
-```
+    
+    ./hack/catalog.sh | kubectl apply -n $OLM -f -
 
 Interacting with OLM is possible using `kubectl` but the OKD console
 is "friendlier". If you have docker installed, use [this
@@ -166,23 +132,42 @@ to fire it up on <http://localhost:9000>.
 
 #### Using kubectl
 
-To install Knative Kafka into the `knative-eventing` namespace,
-simply subscribe to the operator by running this script:
+To install Knative Kafka into the `knative-eventing` namespace, apply
+the following resources:
 
 ```
-OLM_NS=$(kubectl get og --all-namespaces | grep olm-operators | awk '{print $1}')
-OPERATOR_NS=$(kubectl get og --all-namespaces | grep global-operators | awk '{print $1}')
 cat <<-EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: knative-eventing
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: knative-eventing
+  namespace: knative-eventing
+---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: knative-kafka-operator-sub
   generateName: knative-kafka-operator-
-  namespace: $OPERATOR_NS
+  namespace: knative-eventing
 spec:
   source: knative-kafka-operator
-  sourceNamespace: $OLM_NS
+  sourceNamespace: $OLM
   name: knative-kafka-operator
   channel: alpha
+---
+apiVersion: eventing.knative.dev/v1alpha1
+kind: KnativeEventingKafka
+metadata:
+  name: knative-eventing-kafka
+  namespace: knative-eventing
+spec:
+  bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
+  #setAsDefaultChannelProvisioner: yes
 EOF
 ```
