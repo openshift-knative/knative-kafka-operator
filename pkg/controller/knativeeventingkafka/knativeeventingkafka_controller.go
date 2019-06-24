@@ -34,16 +34,12 @@ var (
 // Add creates a new KnativeEventingKafka Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	manifest, err := mf.NewManifest(*filename, *recursive, mgr.GetClient())
-	if err != nil {
-		return err
-	}
-	return add(mgr, newReconciler(mgr, manifest))
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, man mf.Manifest) reconcile.Reconciler {
-	return &ReconcileKnativeEventingKafka{client: mgr.GetClient(), scheme: mgr.GetScheme(), config: man}
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	return &ReconcileKnativeEventingKafka{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -54,7 +50,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource KnativeEventing
+	// Watch for changes to primary resource KnativeEventingKafka
 	err = c.Watch(&source.Kind{Type: &eventingv1alpha1.KnativeEventingKafka{}}, &handler.EnqueueRequestForObject{}, predicate.GenerationChangedPredicate{})
 	if err != nil {
 		return err
@@ -74,7 +70,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileKnativeEventingKafka{}
 
-// ReconcileKnativeEventing reconciles a KnativeEventing object
+// ReconcileKnativeEventingKafka reconciles a KnativeEventingKafka object
 type ReconcileKnativeEventingKafka struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
@@ -83,8 +79,18 @@ type ReconcileKnativeEventingKafka struct {
 	config mf.Manifest
 }
 
-// Reconcile reads that state of the cluster for a KnativeEventing object and makes changes based on the state read
-// and what is in the KnativeEventing.Spec
+// Create manifestival resources and KnativeEventingKafka, if necessary
+func (r *ReconcileKnativeEventingKafka) InjectClient(c client.Client) error {
+	m, err := mf.NewManifest(*filename, *recursive, c)
+	if err != nil {
+		return err
+	}
+	r.config = m
+	return nil
+}
+
+// Reconcile reads that state of the cluster for a KnativeEventingKafka object and makes changes based on the state read
+// and what is in the KnativeEventingKafka.Spec
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -92,7 +98,7 @@ func (r *ReconcileKnativeEventingKafka) Reconcile(request reconcile.Request) (re
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling KnativeEventingKafka")
 
-	// Fetch the KnativeEventing instance
+	// Fetch the KnativeEventingKafka instance
 	instance := &eventingv1alpha1.KnativeEventingKafka{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
@@ -174,6 +180,7 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 	// Update status
 	instance.Status.Version = version.Version
 	instance.Status.MarkInstallSucceeded()
+	log.Info("Install succeeded", "version", version.Version)
 	return nil
 }
 
@@ -207,6 +214,7 @@ func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alp
 		}
 	}
 	instance.Status.MarkDeploymentsAvailable()
+	log.Info("All deployments are available")
 	return nil
 }
 
