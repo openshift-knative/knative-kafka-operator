@@ -29,7 +29,7 @@ It's not strictly required but does provide some handy tooling.
 
 The installation of Knative Kafka is triggered by the creation of
 [an `KnativeEventingKafka` custom
-resource](deploy/crds/eventing_v1alpha1_kafka_install_crd.yaml).
+resource](deploy/crds/eventing_v1alpha1_knativeeventingkafka_crd.yaml).
 
 The following are all equivalent, but the latter may suffer from name
 conflicts.
