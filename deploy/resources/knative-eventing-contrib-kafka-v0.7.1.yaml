@@ -183,6 +183,23 @@ spec:
                       type: object
                   type: object
               type: object
+            resources:
+              properties:
+                limits:
+                  properties:
+                    cpu:
+                      type: string
+                    memory:
+                      type: string
+                  type: object
+                requests:
+                  properties:
+                    cpu:
+                      type: string
+                    memory:
+                      type: string
+                  type: object
+              type: object
             serviceAccountName:
               type: string
             sink:
@@ -260,13 +277,10 @@ spec:
       containers:
       - env:
         - name: KAFKA_RA_IMAGE
-          value: gcr.io/knative-releases/github.com/knative/eventing-sources/contrib/kafka/cmd/receive_adapter@sha256:49165a6daeff98111b261a7382f6f94713124ba0025ba6472e70525d94006c30
-        image: gcr.io/knative-releases/github.com/knative/eventing-sources/contrib/kafka/cmd/controller@sha256:9add92abc42cc769e93fd21ea106a6de637a2422ebd58f20999e04e2f61f9835
+          value: gcr.io/knative-releases/github.com/knative/eventing-contrib/kafka/source/cmd/receive_adapter@sha256:eafe18bbd659606f35a22d8b64389e91f48afff0f51782a9fabcbe84fa6637d0
+        image: gcr.io/knative-releases/github.com/knative/eventing-contrib/kafka/source/cmd/controller@sha256:560df1756d7182c5b7b4b3684f35673f1c4650518db6f1d2bf63ecd383263ffd
         name: manager
         resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
           requests:
             cpu: 20m
             memory: 20Mi
