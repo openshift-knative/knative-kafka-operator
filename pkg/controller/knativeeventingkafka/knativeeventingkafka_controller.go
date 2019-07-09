@@ -2,8 +2,8 @@ package knativeeventingkafka
 
 import (
 	"context"
-	"flag"
 	go_errors "errors"
+	"flag"
 
 	mf "github.com/jcrossley3/manifestival"
 	eventingv1alpha1 "github.com/openshift-knative/knative-kafka-operator/pkg/apis/eventing/v1alpha1"
@@ -221,12 +221,12 @@ func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alp
 func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet bool) error {
 	key := client.ObjectKey{Namespace: "knative-eventing", Name: "default-channel-webhook"}
 	result := &unstructured.Unstructured{}
-	result.SetAPIVersion("v1");
-	result.SetKind("ConfigMap");
+	result.SetAPIVersion("v1")
+	result.SetKind("ConfigMap")
 	if err := r.client.Get(context.TODO(), key, result); err != nil {
 		return err
 	}
-	configMapData := result.Object["data"];
+	configMapData := result.Object["data"]
 	configMap, ok := configMapData.(map[string]interface{})
 	if !ok {
 		return go_errors.New("Unexpected structure of knative-eventing/default-channel-webhook ConfigMap")
@@ -250,6 +250,10 @@ func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
 		"eventing-sources-kafka-controller",
 		"kafka-channel-controller",
 		"kafka-channel-dispatcher",
+		"kafka-channelable-manipulator",
+		"kafka-ch-controller",
+		"kafka-ch-dispatcher",
+		"kafka-webhook",
 	}
 
 	matchesClusterRole := func(cr string) bool {
@@ -277,8 +281,8 @@ func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
 
 func bootstrapServersTransformer(bootstrapServers string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
-		if u.GetKind() == "ConfigMap" && u.GetName() == "kafka-channel-controller-config" {
-			unstructured.SetNestedField(u.Object, bootstrapServers, "data", "bootstrap_servers")
+		if u.GetKind() == "ConfigMap" && (u.GetName() == "kafka-channel-controller-config" || u.GetName() == "config-kafka") {
+			unstructured.SetNestedField(u.Object, bootstrapServers, "data", "bootstrapServers")
 		}
 		return nil
 	}
