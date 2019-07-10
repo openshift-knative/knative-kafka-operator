@@ -45,6 +45,13 @@ spec:
     1. A Knative Eventing Source to consume messages from an Apache Kafka topic
     1. A Knative Eventing Channel that is backed by Apache Kafka topics
 
+    ## Prerequisites
+
+    ### Apache Kafka and Knative Eventing
+    Knative Eventing and Apache Kafka is required since this operator will attempt to
+    Knative components that work with an Apache Kafka cluster that is accessible the
+    installation.
+
     For complete Knative Eventing documentation, see
     [Knative eventing](https://www.knative.dev/docs/eventing/) or
     [Knative docs](https://www.knative.dev/docs/) to learn about Knative.
