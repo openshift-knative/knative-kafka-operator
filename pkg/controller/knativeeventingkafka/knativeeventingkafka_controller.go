@@ -172,6 +172,11 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 		return err
 	}
 
+	if err := r.setAsDefaultChannel(
+		instance.Spec.SetAsDefaultChannelProvisioner); err != nil {
+		return err
+	}
+
 	if err := r.setAsDefaultChannelProvisioner(
 		instance.Spec.SetAsDefaultChannelProvisioner); err != nil {
 		return err
@@ -218,6 +223,7 @@ func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alp
 	return nil
 }
 
+// TODO: remove with 0.9.0
 func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet bool) error {
 	key := client.ObjectKey{Namespace: "knative-eventing", Name: "default-channel-webhook"}
 	result := &unstructured.Unstructured{}
@@ -239,6 +245,31 @@ func (r *ReconcileKnativeEventingKafka) setAsDefaultChannelProvisioner(doSet boo
 	}
 	defaultChannelConfigValue += "\n"
 	configMap["default-channel-config"] = defaultChannelConfigValue
+	err := r.config.Apply(result)
+	return err
+}
+
+func (r *ReconcileKnativeEventingKafka) setAsDefaultChannel(doSet bool) error {
+	key := client.ObjectKey{Namespace: "knative-eventing", Name: "default-ch-webhook"}
+	result := &unstructured.Unstructured{}
+	result.SetAPIVersion("v1")
+	result.SetKind("ConfigMap")
+	if err := r.client.Get(context.TODO(), key, result); err != nil {
+		return err
+	}
+	configMapData := result.Object["data"]
+	configMap, ok := configMapData.(map[string]interface{})
+	if !ok {
+		return go_errors.New("Unexpected structure of knative-eventing/default-ch-webhook ConfigMap")
+	}
+	defaultChannelConfigValue := "clusterDefault:\n  apiversion: messaging.knative.dev/v1alpha1\n  kind: "
+	if doSet {
+		defaultChannelConfigValue += `KafkaChannel`
+	} else {
+		defaultChannelConfigValue += `InMemoryChannel`
+	}
+	defaultChannelConfigValue += "\n"
+	configMap["default-ch-config"] = defaultChannelConfigValue
 	err := r.config.Apply(result)
 	return err
 }
