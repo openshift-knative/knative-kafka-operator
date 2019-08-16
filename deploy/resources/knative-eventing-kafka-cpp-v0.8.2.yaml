@@ -1,18 +1,24 @@
 apiVersion: eventing.knative.dev/v1alpha1
 kind: ClusterChannelProvisioner
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka
 spec: {}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-controller
   namespace: knative-eventing
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-controller
 rules:
 - apiGroups:
@@ -70,6 +76,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-controller-manage
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -85,12 +93,16 @@ data:
   bootstrapServers: REPLACE_WITH_CLUSTER_URL
 kind: ConfigMap
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-controller-config
   namespace: knative-eventing
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-controller
   namespace: knative-eventing
 spec:
@@ -109,7 +121,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: gcr.io/knative-releases/github.com/knative/eventing/contrib/kafka/cmd/controller@sha256:4200310008b6059666d4610b7b38847d182c28ec36847776b508ad29a9680b8b
+        image: gcr.io/knative-releases/github.com/knative/eventing-contrib/kafka/channel/cmd/controller@sha256:341a62e87824b65e1112f38ecc5a39bdf9785e19b7f1c6cc5d8927702bb18ce7
         name: kafka-channel-controller-controller
         volumeMounts:
         - mountPath: /etc/config-provisioner
@@ -123,12 +135,16 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-dispatcher
   namespace: knative-eventing
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-dispatcher
 rules:
 - apiGroups:
@@ -150,6 +166,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-dispatcher
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -163,6 +181,8 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
   name: kafka-channel-dispatcher
   namespace: knative-eventing
 spec:
@@ -183,7 +203,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: gcr.io/knative-releases/github.com/knative/eventing/contrib/kafka/cmd/dispatcher@sha256:832bb86d9bbeb3c95abff6d384d6409e0cffac11e00c5cae8326789c317c79ac
+        image: gcr.io/knative-releases/github.com/knative/eventing-contrib/kafka/channel/cmd/dispatcher@sha256:fb7b78ea7336cdaaf43020d0ec5b66abce1241065a46e76221fcd7e614deff01
         name: dispatcher
         volumeMounts:
         - mountPath: /etc/config-provisioner
