@@ -279,8 +279,6 @@ func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
 	// these do need some openshift specific SCC
 	clusterRoles := []string{
 		"eventing-sources-kafka-controller",
-		"kafka-channel-controller",
-		"kafka-channel-dispatcher",
 		"kafka-channelable-manipulator",
 		"kafka-ch-controller",
 		"kafka-ch-dispatcher",
@@ -312,7 +310,7 @@ func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
 
 func bootstrapServersTransformer(bootstrapServers string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
-		if u.GetKind() == "ConfigMap" && (u.GetName() == "kafka-channel-controller-config" || u.GetName() == "config-kafka") {
+		if u.GetKind() == "ConfigMap" && u.GetName() == "config-kafka" {
 			unstructured.SetNestedField(u.Object, bootstrapServers, "data", "bootstrapServers")
 		}
 		return nil
