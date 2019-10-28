@@ -95,6 +95,8 @@ spec:
                 - name: OPERATOR_NAME
                   value: knative-kafka-operator
                 image: quay.io/openshift-knative/knative-kafka-operator:v0.9.0
+                args:
+                  - --filename=https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v0.9.0/openshift/release/knative-eventing-kafka-contrib-v0.9.0.yaml
                 imagePullPolicy: Always
                 name: knative-kafka-operator
                 resources: {}
