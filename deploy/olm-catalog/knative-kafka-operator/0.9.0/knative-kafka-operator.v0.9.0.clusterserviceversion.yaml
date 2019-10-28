@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"eventing.knative.dev/v1alpha1","kind":"KnativeEventingKafka","metadata":{"name":"knative-eventing-kafka"},"spec":{"bootstrapServers":"my-cluster-kafka-bootstrap.kafka:9092","setAsDefaultChannelProvisioner":true}}]'
+    alm-examples: '[{"apiVersion":"eventing.knative.dev/v1alpha1","kind":"KnativeEventingKafka","metadata":{"name":"knative-eventing-kafka","namespace":"knative-eventing"},"spec":{"bootstrapServers":"my-cluster-kafka-bootstrap.kafka:9092","setAsDefaultChannelProvisioner":true}}]'
     capabilities: Basic Install
     categories: Networking,Integration & Delivery,Cloud Provider,Developer Tools
     certified: "false"
