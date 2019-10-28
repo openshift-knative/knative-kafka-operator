@@ -106,10 +106,11 @@ The [catalog.sh](hack/catalog.sh) script should yield a valid
 `ClusterServiceVersions`, `CustomResourceDefinitions`, and package
 manifest in the bundle beneath
 [deploy/olm-catalog](deploy/olm-catalog/). You should apply its output
-in the OLM namespace:
+in the namespace where the other `CatalogSources` live on your cluster,
+e.g. `openshift-marketplace`:
 
-    OLM=$(kubectl get pods --all-namespaces | grep olm-operator | head -1 | awk '{print $1}')
-    ./hack/catalog.sh | kubectl apply -n $OLM -f -
+    CN_NS=$(kubectl get catalogsources --all-namespaces | tail -1 | awk '{print $1}')
+    ./hack/catalog.sh | kubectl apply -n $CN_NS -f -
 
 ### Using OLM on Minikube
 
@@ -123,7 +124,7 @@ installing OLM on it:
 Once all the pods in the `olm` namespace are running, install the
 operator like so:
     
-    ./hack/catalog.sh | kubectl apply -n $OLM -f -
+    ./hack/catalog.sh | kubectl apply -n $CN_NS -f -
 
 Interacting with OLM is possible using `kubectl` but the OKD console
 is "friendlier". If you have docker installed, use [this
@@ -136,6 +137,8 @@ To install Knative Kafka into the `knative-eventing` namespace, apply
 the following resources:
 
 ```
+CN_NS=$(kubectl get catalogsources --all-namespaces | tail -1 | awk '{print $1}')
+OPERATOR_NS=$(kubectl get og --all-namespaces | grep global-operators | awk '{print $1}')
 cat <<-EOF | kubectl apply -f -
 ---
 apiVersion: operators.coreos.com/v1alpha1
@@ -146,7 +149,7 @@ metadata:
   namespace: $OPERATOR_NS
 spec:
   source: knative-kafka-operator
-  sourceNamespace: $OLM
+  sourceNamespace: $CN_NS
   name: knative-kafka-operator
   channel: alpha
 ---
@@ -154,6 +157,7 @@ apiVersion: eventing.knative.dev/v1alpha1
 kind: KnativeEventingKafka
 metadata:
   name: knative-eventing-kafka
+  namespace: knative-eventing
 spec:
   bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
   #setAsDefaultChannelProvisioner: yes
