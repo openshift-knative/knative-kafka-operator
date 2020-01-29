@@ -163,3 +163,40 @@ spec:
   #setAsDefaultChannelProvisioner: yes
 EOF
 ```
+
+### Releasing new version
+
+Make sure you updated `version/version.go` first. 
+Also update `deploy/operator.yaml` with the new image.
+
+Replace the old files in `deploy/resources` with the new ones.
+(e.g. create `deploy/resources/kafka-channel-v0.12.1.yaml` with https://github.com/knative/eventing-contrib/releases/download/v0.12.1/kafka-channel.yaml) 
+
+Then run these commands to generate OLM metadata for the new version of the operator:
+
+```
+DIR=${DIR:-$(cd $(dirname "$0")/.. && pwd)}
+NAME=${NAME:-$(ls $DIR/deploy/olm-catalog)}
+
+# find the latest version from nested directories in deploy/olm-catalog/knative-eventing-operator
+LATEST_VERSION=$(find deploy/olm-catalog/${NAME}/* -maxdepth 1 -type d -exec basename {} \; | sort -V | tail -1)
+
+# read the current/next version from version/version.go
+CURRENT_VERSION=$(awk '/Version =/{print $NF}' version/version.go | awk '{gsub(/"/, "", $1); print $1}')
+                                
+# if you have operator-sdk CLI version < 0.15.0
+operator-sdk olm-catalog gen-csv --update-crds --csv-version "${CURRENT_VERSION}" --from-version "${LATEST_VERSION}"
+
+# if you have operator-sdk CLI version >= 0.15.0
+# GO111MODULE="on" operator-sdk generate csv --update-crds --csv-version "${CURRENT_VERSION}" --from-version "${LATEST_VERSION}"
+```
+
+Then look for references to previous version in the `deploy/olm-catalog/knative-kafka-operator/${CURRENT_VERSION}/*.clusterserviceversion.yaml` file.
+Replace them with the new version. ...except the `replaces` property.
+
+Once this change is merged and a new tag is created for the release, add following to the `deploy/olm-catalog/knative-kafka-operator/${CURRENT_VERSION}/*.clusterserviceversion.yaml` file. 
+
+```
+args:
+  - --filename=https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v${CURRENT_VERSION}/openshift/release/knative-eventing-kafka-contrib-v${CURRENT_VERSION}.yaml,https://raw.githubusercontent.com/openshift-knative/knative-kafka-operator/v${CURRENT_VERSION}/deploy/resources/networkpolicies.yaml
+```
