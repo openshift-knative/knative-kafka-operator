@@ -194,9 +194,11 @@ operator-sdk olm-catalog gen-csv --update-crds --csv-version "${CURRENT_VERSION}
 Then look for references to previous version in the `deploy/olm-catalog/knative-kafka-operator/${CURRENT_VERSION}/*.clusterserviceversion.yaml` file.
 Replace them with the new version. ...except the `replaces` property.
 
-Once this change is merged and a new tag is created for the release, add following to the `deploy/olm-catalog/knative-kafka-operator/${CURRENT_VERSION}/*.clusterserviceversion.yaml` file. 
+Add following to the `deploy/olm-catalog/knative-kafka-operator/${CURRENT_VERSION}/*.clusterserviceversion.yaml` file. 
 
 ```
 args:
   - --filename=https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v${CURRENT_VERSION}/openshift/release/knative-eventing-kafka-contrib-v${CURRENT_VERSION}.yaml,https://raw.githubusercontent.com/openshift-knative/knative-kafka-operator/v${CURRENT_VERSION}/deploy/resources/networkpolicies.yaml
 ```
+
+The `networkpolicies.yaml` file won't be there yet. However, with the release cut, it will be available.
