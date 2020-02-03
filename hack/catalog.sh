@@ -10,16 +10,16 @@ LATEST=$(find $DIR/deploy/olm-catalog -name '*version.yaml' | sort -n | sed "s/^
 
 indent() {
   INDENT="      "
-  sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
+  sed "s/^/$INDENT/" | sed "1 s/^${INDENT}\(.*\)/${INDENT:0:-2}- \1/"
 }
 
 rm -rf $DIR/.crds
 mkdir $DIR/.crds
 find $DIR/deploy/olm-catalog -name '*_crd.yaml' | sort -n | xargs -I{} cp {} $DIR/.crds/
 
-CRD=$(cat $(ls $DIR/.crds/*) | grep -v -- "---" | indent apiVersion)
-CSV=$(cat $(find $DIR/deploy/olm-catalog -name '*version.yaml' | sort -n) | indent apiVersion)
-PKG=$(cat $DIR/deploy/olm-catalog/$NAME/*package.yaml | indent packageName)
+CRD=$(for i in $(ls $DIR/.crds/*); do cat $i | grep -v -- "---" | indent; done)
+CSV=$(for i in $(find $DIR/deploy/olm-catalog -name '*version.yaml' | sort -n); do cat $i | indent; done)
+PKG=$(for i in $DIR/deploy/olm-catalog/$NAME/*package.yaml; do cat $i | indent; done)
 
 cat <<EOF | sed 's/^  *$//'
 kind: ConfigMap
