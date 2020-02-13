@@ -1,5 +1,4 @@
+packageName: knative-kafka-operator
 channels:
 - currentCSV: knative-kafka-operator.v0.12.1
   name: alpha
-defaultChannel: ""
-packageName: knative-kafka-operator

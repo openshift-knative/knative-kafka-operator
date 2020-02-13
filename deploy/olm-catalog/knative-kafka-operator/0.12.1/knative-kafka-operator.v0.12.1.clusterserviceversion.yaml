@@ -198,6 +198,7 @@ spec:
   - email: knative@redhat.com
     name: Knative team at Red Hat
   maturity: alpha
+  minKubeVersion: 1.15.0
   provider:
     name: Red Hat
   replaces: knative-kafka-operator.v0.11.2
