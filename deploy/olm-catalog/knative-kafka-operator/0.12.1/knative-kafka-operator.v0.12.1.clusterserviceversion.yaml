@@ -20,7 +20,7 @@ metadata:
     categories: Networking,Integration & Delivery,Cloud Provider,Developer Tools
     certified: "false"
     containerImage: quay.io/openshift-knative/knative-kafka-operator:v0.12.1
-    createdAt: "2019-06-07T14:00:00Z"
+    createdAt: "2020-02-10T14:00:00Z"
     description: Knative Eventing Kafka manages the Kafka source and channel provisioner
       for Knative Eventing
     repository: https://github.com/openshift-knative/knative-kafka-operator
@@ -31,10 +31,25 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: KnativeEventingKafka is the Schema for the knativeeventingkafkas
-        API
+    - description: Represents an installation of a Knative components for Apache Kafka
+      displayName: Knative components for Apache Kafka
       kind: KnativeEventingKafka
       name: knativeeventingkafkas.eventing.knative.dev
+      specDescriptors:
+      - description: URI(s) of Apache Kafka broker(s)
+        displayName: bootstrapServers
+        path: bootstrapServers
+      - description: Flag that controls whether Kafka channel provisioner is configured
+          as the cluster default. Defaults to false.
+        displayName: setAsDefaultChannelProvisioner
+        path: setAsDefaultChannelProvisioner
+      statusDescriptors:
+      - description: The version of Knative Eventing Kafka installed
+        displayName: Version
+        path: version
+      - description: The latest available observations of a resource's current state
+        displayName: conditions
+        path: conditions
       version: v1alpha1
   description: |
     Apache Kafka is a distributed streaming platform and this operator adds support for
@@ -62,285 +77,6 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels
-          - kafkachannels/status
-          verbs:
-          - get
-          - list
-          - watch
-        serviceAccountName: kafka-addressable-resolver
-      - rules:
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels
-          - kafkachannels/status
-          verbs:
-          - create
-          - get
-          - list
-          - watch
-          - update
-          - patch
-        serviceAccountName: kafka-channelable-manipulator
-      - rules:
-        - apiGroups:
-          - sources.eventing.knative.dev
-          resources:
-          - kafkasources
-          - kafkasources/finalizers
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - sources.eventing.knative.dev
-          resources:
-          - kafkasources/status
-          verbs:
-          - get
-          - update
-          - patch
-        - apiGroups:
-          - apps
-          resources:
-          - deployments
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          - services
-          - endpoints
-          - persistentvolumeclaims
-          - events
-          - configmaps
-          - secrets
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - eventing.knative.dev
-          resources:
-          - eventtypes
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        serviceAccountName: eventing-sources-kafka-controller
-      - rules:
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels
-          - kafkachannels/status
-          verbs:
-          - get
-          - list
-          - watch
-          - update
-          - patch
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - ""
-          resources:
-          - services
-          - configmaps
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-        - apiGroups:
-          - ""
-          resources:
-          - services
-          verbs:
-          - update
-        - apiGroups:
-          - ""
-          resourceNames:
-          - kafka-ch-dispatcher
-          resources:
-          - configmaps
-          verbs:
-          - update
-        - apiGroups:
-          - ""
-          resources:
-          - events
-          verbs:
-          - create
-          - patch
-          - update
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - ""
-          resources:
-          - endpoints
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - apps
-          resources:
-          - deployments
-          - deployments/status
-          verbs:
-          - get
-          - list
-          - watch
-        serviceAccountName: kafka-ch-controller
-      - rules:
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels
-          verbs:
-          - get
-          - list
-          - watch
-          - patch
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels/status
-          verbs:
-          - get
-          - update
-          - patch
-        - apiGroups:
-          - ""
-          resources:
-          - events
-          verbs:
-          - get
-          - list
-          - watch
-          - patch
-          - create
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels
-          verbs:
-          - get
-          - list
-          - watch
-          - patch
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - ""
-          resources:
-          - events
-          verbs:
-          - create
-          - patch
-        serviceAccountName: kafka-ch-dispatcher
-      - rules:
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - ""
-          resources:
-          - secrets
-          verbs:
-          - get
-          - create
-        - apiGroups:
-          - apps
-          resources:
-          - deployments
-          verbs:
-          - get
-        - apiGroups:
-          - apps
-          resources:
-          - deployments/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - admissionregistration.k8s.io
-          resources:
-          - mutatingwebhookconfigurations
-          verbs:
-          - get
-          - list
-          - create
-          - update
-          - delete
-          - patch
-          - watch
-        - apiGroups:
-          - messaging.knative.dev
-          resources:
-          - kafkachannels
-          - kafkachannels/status
-          verbs:
-          - get
-          - list
-          - watch
-        serviceAccountName: kafka-webhook
-      - rules:
-        - apiGroups:
-          - sources.eventing.knative.dev
-          resources:
-          - kafkasources
-          verbs:
-          - get
-          - list
-          - watch
-        serviceAccountName: eventing-contrib-kafka-source-observer
-      - rules:
-        - apiGroups:
           - '*'
           resources:
           - '*'
@@ -348,128 +84,6 @@ spec:
           - '*'
         serviceAccountName: knative-kafka-operator
       deployments:
-      - name: kafka-ch-dispatcher
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              messaging.knative.dev/channel: kafka-channel
-              messaging.knative.dev/role: dispatcher
-          strategy: {}
-          template:
-            metadata:
-              labels:
-                messaging.knative.dev/channel: kafka-channel
-                messaging.knative.dev/role: dispatcher
-            spec:
-              containers:
-              - env:
-                - name: CONFIG_LOGGING_NAME
-                  value: config-logging
-                - name: METRICS_DOMAIN
-                  value: knative.dev/eventing
-                - name: SYSTEM_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-                image: gcr.io/knative-releases/knative.dev/eventing-contrib/kafka/channel/cmd/channel_dispatcher@sha256:9c3cc001f593676d215750a0d7b6d2a2e621b6550bbbf35e9f03b3f54924f93c
-                name: dispatcher
-                ports:
-                - containerPort: 9090
-                  name: metrics
-                resources: {}
-                volumeMounts:
-                - mountPath: /etc/config-logging
-                  name: config-logging
-                - mountPath: /etc/config-kafka
-                  name: config-kafka
-              serviceAccountName: kafka-ch-dispatcher
-              volumes:
-              - configMap:
-                  name: config-logging
-                name: config-logging
-              - configMap:
-                  name: config-kafka
-                name: config-kafka
-      - name: kafka-ch-controller
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              messaging.knative.dev/channel: kafka-channel
-              messaging.knative.dev/role: controller
-          strategy: {}
-          template:
-            metadata:
-              labels:
-                messaging.knative.dev/channel: kafka-channel
-                messaging.knative.dev/role: controller
-            spec:
-              containers:
-              - env:
-                - name: CONFIG_LOGGING_NAME
-                  value: config-logging
-                - name: METRICS_DOMAIN
-                  value: knative.dev/eventing
-                - name: SYSTEM_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-                image: gcr.io/knative-releases/knative.dev/eventing-contrib/kafka/channel/cmd/channel_controller@sha256:9ce549d26f8b2c1382cdda25de06c1eacadb31e1e73d42da7fbab92cedc0275c
-                name: controller
-                ports:
-                - containerPort: 9090
-                  name: metrics
-                resources: {}
-                volumeMounts:
-                - mountPath: /etc/config-logging
-                  name: config-logging
-                - mountPath: /etc/config-kafka
-                  name: config-kafka
-              serviceAccountName: kafka-ch-controller
-              volumes:
-              - configMap:
-                  name: config-logging
-                name: config-logging
-              - configMap:
-                  name: config-kafka
-                name: config-kafka
-      - name: kafka-webhook
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              app: kafka-webhook
-              role: kafka-webhook
-          strategy: {}
-          template:
-            metadata:
-              annotations:
-                sidecar.istio.io/inject: "false"
-              labels:
-                app: kafka-webhook
-                role: kafka-webhook
-            spec:
-              containers:
-              - env:
-                - name: SYSTEM_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-                - name: CONFIG_LOGGING_NAME
-                  value: config-logging
-                - name: METRICS_DOMAIN
-                  value: knative.dev/eventing
-                - name: WEBHOOK_NAME
-                  value: kafka-webhook
-                image: gcr.io/knative-releases/knative.dev/eventing-contrib/kafka/channel/cmd/webhook@sha256:102f01288d90430b41baf389c134fe81e33cf32231b5a422fdd8cfb3af7950fd
-                name: kafka-webhook
-                ports:
-                - containerPort: 9090
-                  name: metrics
-                resources: {}
-                terminationMessagePolicy: FallbackToLogsOnError
-              serviceAccountName: kafka-webhook
       - name: knative-kafka-operator
         spec:
           replicas: 1
@@ -584,6 +198,7 @@ spec:
   - email: knative@redhat.com
     name: Knative team at Red Hat
   maturity: alpha
+  minKubeVersion: 1.15.0
   provider:
     name: Red Hat
   replaces: knative-kafka-operator.v0.11.2

@@ -175,7 +175,7 @@ Replace the old files in `deploy/resources` with the new ones.
 Then run these commands to generate OLM metadata for the new version of the operator:
 
 ```
-DIR=${DIR:-$(cd $(dirname "$0")/.. && pwd)}
+DIR=${DIR:-$(pwd)}
 NAME=${NAME:-$(ls $DIR/deploy/olm-catalog)}
 
 # find the latest version from nested directories in deploy/olm-catalog/knative-eventing-operator
