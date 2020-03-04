@@ -13,9 +13,79 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaSource":       schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSource(ref),
-		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaSourceSpec":   schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceSpec(ref),
-		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaSourceStatus": schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceStatus(ref),
+		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannel":       schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannel(ref),
+		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannelSpec":   schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannelSpec(ref),
+		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannelStatus": schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannelStatus(ref),
+		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaSource":        schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSource(ref),
+		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaSourceSpec":    schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceSpec(ref),
+		"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaSourceStatus":  schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceStatus(ref),
+	}
+}
+
+func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannel(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "KnativeEventingKafkaChannel is the Schema for the knativeeventingkafkachannels API",
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannelSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannelStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannelSpec", "github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1.KnativeEventingKafkaChannelStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannelSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "KnativeEventingKafkaChannelSpec defines the desired state of KnativeEventingKafkaChannel",
+				Properties:  map[string]spec.Schema{},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannelStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "KnativeEventingKafkaChannelStatus defines the observed state of KnativeEventingKafkaChannel",
+				Properties:  map[string]spec.Schema{},
+			},
+		},
+		Dependencies: []string{},
 	}
 }
 

@@ -1,0 +1,7 @@
+apiVersion: operator.knative.dev/v1alpha1
+kind: KnativeEventingKafkaChannel
+metadata:
+  name: example-knativeeventingkafkachannel
+spec:
+  # Add fields here
+  size: 3
