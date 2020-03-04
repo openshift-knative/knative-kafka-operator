@@ -58,6 +58,12 @@ rules:
   - '*'
   verbs:
   - '*'
+- apiGroups:
+  - operator.knative.dev
+  resources:
+  - '*'
+  verbs:
+  - '*'
 
 ---
 kind: ClusterRole
