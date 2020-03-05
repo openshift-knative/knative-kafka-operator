@@ -63,3 +63,16 @@ type KnativeEventingKafkaChannelList struct {
 func init() {
 	SchemeBuilder.Register(&KnativeEventingKafkaChannel{}, &KnativeEventingKafkaChannelList{})
 }
+
+// check if KnativeEventingKafkaChannelStatus implements apis.ConditionsAccessor
+var _ apis.ConditionsAccessor = &KnativeEventingKafkaChannelStatus{}
+
+// GetConditions implements apis.ConditionsAccessor
+func (s *KnativeEventingKafkaChannelStatus) GetConditions() apis.Conditions {
+	return s.Conditions
+}
+
+// SetConditions implements apis.ConditionsAccessor
+func (s *KnativeEventingKafkaChannelStatus) SetConditions(c apis.Conditions) {
+	s.Conditions = c
+}

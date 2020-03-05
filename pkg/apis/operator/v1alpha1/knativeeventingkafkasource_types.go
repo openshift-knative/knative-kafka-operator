@@ -58,3 +58,16 @@ type KnativeEventingKafkaSourceList struct {
 func init() {
 	SchemeBuilder.Register(&KnativeEventingKafkaSource{}, &KnativeEventingKafkaSourceList{})
 }
+
+// check if KnativeEventingKafkaSourceStatus implements apis.ConditionsAccessor
+var _ apis.ConditionsAccessor = &KnativeEventingKafkaSourceStatus{}
+
+// GetConditions implements apis.ConditionsAccessor
+func (s *KnativeEventingKafkaSourceStatus) GetConditions() apis.Conditions {
+	return s.Conditions
+}
+
+// SetConditions implements apis.ConditionsAccessor
+func (s *KnativeEventingKafkaSourceStatus) SetConditions(c apis.Conditions) {
+	s.Conditions = c
+}

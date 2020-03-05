@@ -126,7 +126,7 @@ func (r *ReconcileKnativeEventingKafkaSource) Reconcile(request reconcile.Reques
 // Initialize status conditions
 func (r *ReconcileKnativeEventingKafkaSource) initStatus(instance *operatorv1alpha1.KnativeEventingKafkaSource) error {
 	if len(instance.Status.Conditions) == 0 {
-		instance.Status.InitializeConditions()
+		operatorv1alpha1.InitializeConditions(&instance.Status)
 		if err := r.updateStatus(instance); err != nil {
 			return err
 		}
@@ -158,20 +158,20 @@ func (r *ReconcileKnativeEventingKafkaSource) install(instance *operatorv1alpha1
 	}
 	r.config.Transform(fns...)
 
-	if instance.Status.IsDeploying() {
+	if operatorv1alpha1.IsDeploying(&instance.Status) {
 		return nil
 	}
 	defer r.updateStatus(instance)
 
 	// Apply the resources in the YAML file
 	if err := r.config.ApplyAll(); err != nil {
-		instance.Status.MarkInstallFailed(err.Error())
+		operatorv1alpha1.MarkInstallFailed(&instance.Status, err.Error())
 		return err
 	}
 
 	// Update status
 	instance.Status.Version = version.Version
-	instance.Status.MarkInstallSucceeded()
+	operatorv1alpha1.MarkInstallSucceeded(&instance.Status)
 	log.Info("Install succeeded", "version", version.Version)
 	return nil
 }
@@ -193,19 +193,19 @@ func (r *ReconcileKnativeEventingKafkaSource) checkDeployments(instance *operato
 		if u.GetKind() == "Deployment" {
 			key := client.ObjectKey{Namespace: u.GetNamespace(), Name: u.GetName()}
 			if err := r.client.Get(context.TODO(), key, deployment); err != nil {
-				instance.Status.MarkDeploymentsNotReady()
+				operatorv1alpha1.MarkDeploymentsNotReady(&instance.Status)
 				if errors.IsNotFound(err) {
 					return nil
 				}
 				return err
 			}
 			if !available(deployment) {
-				instance.Status.MarkDeploymentsNotReady()
+				operatorv1alpha1.MarkDeploymentsNotReady(&instance.Status)
 				return nil
 			}
 		}
 	}
-	instance.Status.MarkDeploymentsAvailable()
+	operatorv1alpha1.MarkDeploymentsAvailable(&instance.Status)
 	log.Info("All deployments are available")
 	return nil
 }
