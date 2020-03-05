@@ -3,6 +3,19 @@ kind: CustomResourceDefinition
 metadata:
   name: knativeeventingkafkasources.operator.knative.dev
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.version
+    name: Version
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Ready")].reason
+    name: Reason
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
   group: operator.knative.dev
   names:
     kind: KnativeEventingKafkaSource
