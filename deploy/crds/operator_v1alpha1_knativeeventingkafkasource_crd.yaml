@@ -28,11 +28,6 @@ spec:
         metadata:
           type: object
         spec:
-          properties:
-            bootstrapServers:
-              type: string
-          required:
-          - bootstrapServers
           type: object
         status:
           properties:

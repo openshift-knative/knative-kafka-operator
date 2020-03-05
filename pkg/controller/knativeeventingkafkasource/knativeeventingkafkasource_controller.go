@@ -2,13 +2,16 @@ package knativeeventingkafkasource
 
 import (
 	"context"
+	"flag"
+	"github.com/operator-framework/operator-sdk/pkg/predicate"
 
+	mf "github.com/jcrossley3/manifestival"
 	operatorv1alpha1 "github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1"
+	"github.com/openshift-knative/knative-kafka-operator/version"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -19,12 +22,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_knativeeventingkafkasource")
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
+var (
+	sourceFilename  = flag.String("source-filename", "deploy/resources/source", "The filename containing the YAML resources to apply")
+	sourceRecursive = flag.Bool("source-recursive", false, "If filename is a directory, process all manifests recursively")
+	log             = logf.Log.WithName("controller_knativeeventingkafkasource")
+)
 
 // Add creates a new KnativeEventingKafkaSource Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -46,14 +48,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource KnativeEventingKafkaSource
-	err = c.Watch(&source.Kind{Type: &operatorv1alpha1.KnativeEventingKafkaSource{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &operatorv1alpha1.KnativeEventingKafkaSource{}}, &handler.EnqueueRequestForObject{}, predicate.GenerationChangedPredicate{})
 	if err != nil {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner KnativeEventingKafkaSource
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	// Watch child deployments for availability
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &operatorv1alpha1.KnativeEventingKafkaSource{},
 	})
@@ -64,7 +65,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileKnativeEventingKafkaSource implements reconcile.Reconciler
 var _ reconcile.Reconciler = &ReconcileKnativeEventingKafkaSource{}
 
 // ReconcileKnativeEventingKafkaSource reconciles a KnativeEventingKafkaSource object
@@ -73,12 +73,21 @@ type ReconcileKnativeEventingKafkaSource struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
+	config mf.Manifest
+}
+
+// Create manifestival resources and KnativeEventingKafkaSource, if necessary
+func (r *ReconcileKnativeEventingKafkaSource) InjectClient(c client.Client) error {
+	m, err := mf.NewManifest(*sourceFilename, *sourceRecursive, c)
+	if err != nil {
+		return err
+	}
+	r.config = m
+	return nil
 }
 
 // Reconcile reads that state of the cluster for a KnativeEventingKafkaSource object and makes changes based on the state read
 // and what is in the KnativeEventingKafkaSource.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -91,63 +100,112 @@ func (r *ReconcileKnativeEventingKafkaSource) Reconcile(request reconcile.Reques
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
+			r.config.DeleteAll()
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
-
-	// Set KnativeEventingKafkaSource instance as the owner and controller
-	//if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-	//	return reconcile.Result{}, err
-	//}
-
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
-	} else if err != nil {
-		return reconcile.Result{}, err
+	// stages hook for future work (e.g. deleteObsoleteResources)
+	stages := []func(*operatorv1alpha1.KnativeEventingKafkaSource) error{
+		r.initStatus,
+		r.install,
+		r.checkDeployments,
 	}
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	for _, stage := range stages {
+		if err := stage(instance); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
 	return reconcile.Result{}, nil
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *operatorv1alpha1.KnativeEventingKafkaSource) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
+// Initialize status conditions
+func (r *ReconcileKnativeEventingKafkaSource) initStatus(instance *operatorv1alpha1.KnativeEventingKafkaSource) error {
+	if len(instance.Status.Conditions) == 0 {
+		instance.Status.InitializeConditions()
+		if err := r.updateStatus(instance); err != nil {
+			return err
+		}
 	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
+	return nil
+}
+
+// Update the status subresource
+func (r *ReconcileKnativeEventingKafkaSource) updateStatus(instance *operatorv1alpha1.KnativeEventingKafkaSource) error {
+
+	// Account for https://github.com/kubernetes-sigs/controller-runtime/issues/406
+	gvk := instance.GroupVersionKind()
+	defer instance.SetGroupVersionKind(gvk)
+
+	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+		return err
 	}
+	return nil
+}
+
+// Apply the embedded resources
+func (r *ReconcileKnativeEventingKafkaSource) install(instance *operatorv1alpha1.KnativeEventingKafkaSource) error {
+	// Transform resources as appropriate
+	fns := []mf.Transformer{
+		mf.InjectOwner(instance),
+		mf.InjectNamespace(instance.GetNamespace()),
+		// TODO: probably not necessary
+		// addSCCforSpecialClusterRoles,
+	}
+	r.config.Transform(fns...)
+
+	if instance.Status.IsDeploying() {
+		return nil
+	}
+	defer r.updateStatus(instance)
+
+	// Apply the resources in the YAML file
+	if err := r.config.ApplyAll(); err != nil {
+		instance.Status.MarkInstallFailed(err.Error())
+		return err
+	}
+
+	// Update status
+	instance.Status.Version = version.Version
+	instance.Status.MarkInstallSucceeded()
+	log.Info("Install succeeded", "version", version.Version)
+	return nil
+}
+
+// Check for all deployments available
+// TODO: what about statefulsets?
+func (r *ReconcileKnativeEventingKafkaSource) checkDeployments(instance *operatorv1alpha1.KnativeEventingKafkaSource) error {
+	defer r.updateStatus(instance)
+	available := func(d *appsv1.Deployment) bool {
+		for _, c := range d.Status.Conditions {
+			if c.Type == appsv1.DeploymentAvailable && c.Status == corev1.ConditionTrue {
+				return true
+			}
+		}
+		return false
+	}
+	deployment := &appsv1.Deployment{}
+	for _, u := range r.config.Resources {
+		if u.GetKind() == "Deployment" {
+			key := client.ObjectKey{Namespace: u.GetNamespace(), Name: u.GetName()}
+			if err := r.client.Get(context.TODO(), key, deployment); err != nil {
+				instance.Status.MarkDeploymentsNotReady()
+				if errors.IsNotFound(err) {
+					return nil
+				}
+				return err
+			}
+			if !available(deployment) {
+				instance.Status.MarkDeploymentsNotReady()
+				return nil
+			}
+		}
+	}
+	instance.Status.MarkDeploymentsAvailable()
+	log.Info("All deployments are available")
+	return nil
 }

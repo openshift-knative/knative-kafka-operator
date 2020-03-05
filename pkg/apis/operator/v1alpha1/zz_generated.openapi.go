@@ -179,15 +179,7 @@ func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceSpec(ref common
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KnativeEventingKafkaSourceSpec defines the desired state of KnativeEventingKafkaSource",
-				Properties: map[string]spec.Schema{
-					"bootstrapServers": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"bootstrapServers"},
+				Properties:  map[string]spec.Schema{},
 			},
 		},
 		Dependencies: []string{},

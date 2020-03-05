@@ -3,5 +3,4 @@ kind: KnativeEventingKafkaSource
 metadata:
   name: example-knativeeventingkafkasource
 spec:
-  # Add fields here
-  size: 3
+  {}

@@ -4,11 +4,6 @@ import (
 	"github.com/knative/pkg/apis"
 )
 
-var conditions = apis.NewLivingConditionSet(
-	DeploymentsAvailable,
-	InstallSucceeded,
-)
-
 // GetConditions implements apis.ConditionsAccessor
 func (s *KnativeEventingKafkaChannelStatus) GetConditions() apis.Conditions {
 	return s.Conditions

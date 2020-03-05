@@ -102,9 +102,6 @@ func (r *ReconcileKnativeEventingKafkaChannel) Reconcile(request reconcile.Reque
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
 			r.config.DeleteAll()
 			return reconcile.Result{}, nil
 		}
