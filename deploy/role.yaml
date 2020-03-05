@@ -53,12 +53,6 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - eventing.knative.dev
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
   - operator.knative.dev
   resources:
   - '*'
