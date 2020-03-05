@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -13,6 +14,11 @@ type KnativeEventingKafkaChannelSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	BootstrapServers string `json:"bootstrapServers"`
+
+	// +optional
+	SetAsDefaultChannelProvisioner bool `json:"setAsDefaultChannelProvisioner,omitempty"`
 }
 
 // KnativeEventingKafkaChannelStatus defines the observed state of KnativeEventingKafkaChannel
@@ -21,6 +27,15 @@ type KnativeEventingKafkaChannelStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	// The version of the installed release
+	// +optional
+	Version string `json:"version"`
+	// The latest available observations of a resource's current state.
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	Conditions apis.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

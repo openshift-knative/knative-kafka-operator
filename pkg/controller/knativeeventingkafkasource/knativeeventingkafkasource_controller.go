@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -104,9 +104,9 @@ func (r *ReconcileKnativeEventingKafkaSource) Reconcile(request reconcile.Reques
 	pod := newPodForCR(instance)
 
 	// Set KnativeEventingKafkaSource instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
+	//if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
+	//	return reconcile.Result{}, err
+	//}
 
 	// Check if this Pod already exists
 	found := &corev1.Pod{}

@@ -3,5 +3,5 @@ kind: KnativeEventingKafkaChannel
 metadata:
   name: example-knativeeventingkafkachannel
 spec:
-  # Add fields here
-  size: 3
+  bootstrapServers: my-cluster-kafka-bootstrap.default.svc:9092
+  setAsDefaultChannelProvisioner: true

@@ -70,7 +70,21 @@ func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannelSpec(ref commo
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KnativeEventingKafkaChannelSpec defines the desired state of KnativeEventingKafkaChannel",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"bootstrapServers": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"setAsDefaultChannelProvisioner": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"bootstrapServers"},
 			},
 		},
 		Dependencies: []string{},
@@ -82,10 +96,38 @@ func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaChannelStatus(ref com
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KnativeEventingKafkaChannelStatus defines the observed state of KnativeEventingKafkaChannel",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The version of the installed release",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "The latest available observations of a resource's current state.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/knative/pkg/apis.Condition"),
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"github.com/knative/pkg/apis.Condition"},
 	}
 }
 
@@ -137,7 +179,15 @@ func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceSpec(ref common
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KnativeEventingKafkaSourceSpec defines the desired state of KnativeEventingKafkaSource",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"bootstrapServers": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"bootstrapServers"},
 			},
 		},
 		Dependencies: []string{},
@@ -149,9 +199,37 @@ func schema_pkg_apis_operator_v1alpha1_KnativeEventingKafkaSourceStatus(ref comm
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "KnativeEventingKafkaSourceStatus defines the observed state of KnativeEventingKafkaSource",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The version of the installed release",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "The latest available observations of a resource's current state.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/knative/pkg/apis.Condition"),
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"github.com/knative/pkg/apis.Condition"},
 	}
 }
