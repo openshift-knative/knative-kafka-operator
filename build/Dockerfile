@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi7/ubi-minimal:7.6
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 
 ENV OPERATOR=/usr/local/bin/knative-kafka-operator \
     USER_UID=1001 \
