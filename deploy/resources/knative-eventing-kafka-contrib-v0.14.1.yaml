@@ -59,15 +59,23 @@ rules:
   - secrets
   verbs: *everything
 - apiGroups:
-  - eventing.knative.dev
-  resources:
-  - eventtypes
-  verbs: *everything
-- apiGroups:
   - "coordination.k8s.io"
   resources:
   - leases
   verbs: *everything
+- apiGroups:
+    - "admissionregistration.k8s.io"
+  resources:
+    - "mutatingwebhookconfigurations"
+    - "validatingwebhookconfigurations"
+  verbs: &everything
+    - "get"
+    - "list"
+    - "create"
+    - "update"
+    - "delete"
+    - "patch"
+    - "watch"
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -122,6 +130,7 @@ metadata:
   labels:
     contrib.eventing.knative.dev/release: devel
     eventing.knative.dev/source: "true"
+    duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
   annotations:
     registry.knative.dev/eventTypes: |
@@ -343,7 +352,7 @@ spec:
       serviceAccountName: kafka-controller-manager
       containers:
       - name: manager
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.13.2
+        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.14.1
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
@@ -356,7 +365,7 @@ spec:
         - name: CONFIG_LEADERELECTION_NAME
           value: config-leader-election-kafka
         - name: KAFKA_RA_IMAGE
-          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.13.2
+          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.14.1
         volumeMounts:
         resources:
           requests:
@@ -365,46 +374,80 @@ spec:
       serviceAccount: kafka-controller-manager
       terminationGracePeriodSeconds: 10
 ---
-apiVersion: apps/v1
-kind: StatefulSet
+apiVersion: v1
+kind: Service
 metadata:
-  name: kafka-controller-manager
+  labels:
+    role: webhook
+    contrib.eventing.knative.dev/release: devel
+  name: kafka-source-webhook
+  namespace: knative-sources
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    control-plane: kafka-controller-manager
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: defaulting.webhook.kafka.sources.knative.dev
+  labels:
+    contrib.eventing.knative.dev/release: devel
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: kafka-source-webhook
+      namespace: knative-sources
+  failurePolicy: Fail
+  name: defaulting.webhook.kafka.sources.knative.dev
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validation.webhook.kafka.sources.knative.dev
+  labels:
+    contrib.eventing.knative.dev/release: devel
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: kafka-source-webhook
+      namespace: knative-sources
+  failurePolicy: Fail
+  name: validation.webhook.kafka.sources.knative.dev
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: config.webhook.kafka.sources.knative.dev
+  labels:
+    serving.knative.dev/release: devel
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: kafka-source-webhook
+      namespace: knative-sources
+  failurePolicy: Fail
+  name: config.webhook.kafka.sources.knative.dev
+  namespaceSelector:
+    matchExpressions:
+    - key: contrib.eventing.knative.dev/release
+      operator: Exists
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kafka-source-webhook-certs
   namespace: knative-sources
   labels:
     contrib.eventing.knative.dev/release: devel
-    control-plane: kafka-controller-manager
-spec:
-  replicas: 0
-  selector:
-    matchLabels: &labels
-      control-plane: kafka-controller-manager
-  serviceName: kafka-controller-manager
-  template:
-    metadata:
-      labels: *labels
-    spec:
-      serviceAccountName: kafka-controller-manager
-      containers:
-      - name: manager
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.13.2
-        env:
-        - name: SYSTEM_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: METRICS_DOMAIN
-          value: knative.dev/sources
-        - name: CONFIG_OBSERVABILITY_NAME
-          value: config-observability
-        - name: KAFKA_RA_IMAGE
-          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.13.2
-        volumeMounts:
-        resources:
-          requests:
-            cpu: 20m
-            memory: 20Mi
-      serviceAccount: kafka-controller-manager
-      terminationGracePeriodSeconds: 10
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -422,6 +465,93 @@ data:
     renewDeadline: "10s"
     retryPeriod: "2s"
     enabledComponents: "kafka-controller"
+---
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-logging
+  namespace: knative-sources
+data:
+  zap-logger-config: |
+    {
+      "level": "info",
+      "development": false,
+      "outputPaths": ["stdout"],
+      "errorOutputPaths": ["stderr"],
+      "encoding": "json",
+      "encoderConfig": {
+        "timeKey": "ts",
+        "levelKey": "level",
+        "nameKey": "logger",
+        "callerKey": "caller",
+        "messageKey": "msg",
+        "stacktraceKey": "stacktrace",
+        "lineEnding": "",
+        "levelEncoder": "",
+        "timeEncoder": "iso8601",
+        "durationEncoder": "",
+        "callerEncoder": ""
+      }
+    }
+  loglevel.controller: "info"
+  loglevel.webhook: "info"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-observability
+  namespace: knative-sources
+data:
+  _example: |
+    logging.enable-var-log-collection: false
+    logging.fluentd-sidecar-image: k8s.gcr.io/fluentd-elasticsearch:v2.0.4
+    logging.fluentd-sidecar-output-config: |
+      <filter **>
+        @type parser
+        key_name log
+        <parse>
+          @type multi_format
+          <pattern>
+            format json
+            time_key fluentd-time # fluentd-time is reserved for structured logs
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+          </pattern>
+          <pattern>
+            format none
+            message_key log
+          </pattern>
+        </parse>
+      </filter>
+      <match **>
+        @id elasticsearch
+        @type elasticsearch
+        @log_level info
+        include_tag_key true
+        host elasticsearch-logging.knative-monitoring
+        port 9200
+        logstash_format true
+        <buffer>
+          @type file
+          path /var/log/fluentd-buffers/kubernetes.system.buffer
+          flush_mode interval
+          retry_type exponential_backoff
+          flush_thread_count 2
+          flush_interval 5s
+          retry_forever
+          retry_max_interval 30
+          chunk_limit_size 2M
+          queue_limit_length 8
+          overflow_action block
+        </buffer>
+      </match>
+    logging.revision-url-template: |
+      http://localhost:8001/api/v1/namespaces/knative-monitoring/services/kibana-logging/proxy/app/kibana#/discover?_a=(query:(match:(kubernetes.labels.knative-dev%2FrevisionUID:(query:'${REVISION_UID}',type:phrase))))
+    logging.request-log-template: '{"httpRequest": {"requestMethod": "{{.Request.Method}}", "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}", "status": {{.Response.Code}}, "responseSize": "{{.Response.Size}}", "userAgent": "{{js .Request.UserAgent}}", "remoteIp": "{{js .Request.RemoteAddr}}", "serverIp": "{{.Revision.PodIP}}", "referer": "{{js .Request.Referer}}", "latency": "{{.Response.Latency}}s", "protocol": "{{.Request.Proto}}"}, "traceId": "{{index .Request.Header "X-B3-Traceid"}}"}'
+    metrics.backend-destination: prometheus
+    metrics.request-metrics-backend-destination: prometheus
+    metrics.stackdriver-project-id: "<your stackdriver project id>"
+    metrics.allow-stackdriver-custom-metrics: "false"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -669,6 +799,7 @@ rules:
       - "create"
       - "list"
       - "watch"
+      - "update"
   - apiGroups:
       - "apps"
     resources:
@@ -910,7 +1041,7 @@ spec:
       serviceAccountName: kafka-ch-controller
       containers:
         - name: controller
-          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-controller:v0.13.2
+          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-controller:v0.14.1
           env:
             - name: CONFIG_LOGGING_NAME
               value: config-logging
@@ -923,7 +1054,7 @@ spec:
             - name: CONFIG_LEADERELECTION_NAME
               value: config-leader-election-kafka
             - name: DISPATCHER_IMAGE
-              value: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.13.2
+              value: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.14.1
           ports:
             - containerPort: 9090
               name: metrics
@@ -998,7 +1129,7 @@ spec:
       containers:
       - name: kafka-webhook
         terminationMessagePolicy: FallbackToLogsOnError
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-webhook:v0.13.2
+        image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-webhook:v0.14.1
         env:
           - name: SYSTEM_NAMESPACE
             valueFrom:
