@@ -401,7 +401,7 @@ webhooks:
   clientConfig:
     service:
       name: kafka-source-webhook
-      namespace: knative-sources
+      namespace: knative-eventing
   failurePolicy: Fail
   name: defaulting.webhook.kafka.sources.knative.dev
 ---
@@ -417,7 +417,7 @@ webhooks:
   clientConfig:
     service:
       name: kafka-source-webhook
-      namespace: knative-sources
+      namespace: knative-eventing
   failurePolicy: Fail
   name: validation.webhook.kafka.sources.knative.dev
 ---
@@ -433,7 +433,7 @@ webhooks:
   clientConfig:
     service:
       name: kafka-source-webhook
-      namespace: knative-sources
+      namespace: knative-eventing
   failurePolicy: Fail
   name: config.webhook.kafka.sources.knative.dev
   namespaceSelector:
