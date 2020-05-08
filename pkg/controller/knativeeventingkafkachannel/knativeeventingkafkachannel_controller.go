@@ -1,18 +1,19 @@
-package knativeeventingkafka
+package knativeeventingkafkachannel
 
 import (
 	"context"
 	go_errors "errors"
 	"flag"
 
-	mf "github.com/jcrossley3/manifestival"
-	eventingv1alpha1 "github.com/openshift-knative/knative-kafka-operator/pkg/apis/eventing/v1alpha1"
-	"github.com/openshift-knative/knative-kafka-operator/version"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
-	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	mf "github.com/jcrossley3/manifestival"
+	operatorv1alpha1 "github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1"
+	"github.com/openshift-knative/knative-kafka-operator/version"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -24,14 +25,12 @@ import (
 )
 
 var (
-	filename = flag.String("filename", "deploy/resources",
-		"The filename containing the YAML resources to apply")
-	recursive = flag.Bool("recursive", false,
-		"If filename is a directory, process all manifests recursively")
-	log = logf.Log.WithName("controller_knativeeventingkafka")
+	channelFilename  = flag.String("channel-filename", "deploy/resources/channel", "The filename containing the YAML resources to apply")
+	channelRecursive = flag.Bool("channel-recursive", false, "If filename is a directory, process all manifests recursively")
+	log              = logf.Log.WithName("controller_knativeeventingkafkachannel")
 )
 
-// Add creates a new KnativeEventingKafka Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new KnativeEventingKafkaChannel Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -39,19 +38,19 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKnativeEventingKafka{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileKnativeEventingKafkaChannel{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("knativeeventingkafka-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("knativeeventingkafkachannel-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource KnativeEventingKafka
-	err = c.Watch(&source.Kind{Type: &eventingv1alpha1.KnativeEventingKafka{}}, &handler.EnqueueRequestForObject{}, predicate.GenerationChangedPredicate{})
+	// Watch for changes to primary resource KnativeEventingKafkaChannel
+	err = c.Watch(&source.Kind{Type: &operatorv1alpha1.KnativeEventingKafkaChannel{}}, &handler.EnqueueRequestForObject{}, predicate.GenerationChangedPredicate{})
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch child deployments for availability
 	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &eventingv1alpha1.KnativeEventingKafka{},
+		OwnerType:    &operatorv1alpha1.KnativeEventingKafkaChannel{},
 	})
 	if err != nil {
 		return err
@@ -68,10 +67,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var _ reconcile.Reconciler = &ReconcileKnativeEventingKafka{}
+var _ reconcile.Reconciler = &ReconcileKnativeEventingKafkaChannel{}
 
-// ReconcileKnativeEventingKafka reconciles a KnativeEventingKafka object
-type ReconcileKnativeEventingKafka struct {
+// ReconcileKnativeEventingKafkaChannel reconciles a KnativeEventingKafkaChannel object
+type ReconcileKnativeEventingKafkaChannel struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
@@ -79,9 +78,9 @@ type ReconcileKnativeEventingKafka struct {
 	config mf.Manifest
 }
 
-// Create manifestival resources and KnativeEventingKafka, if necessary
-func (r *ReconcileKnativeEventingKafka) InjectClient(c client.Client) error {
-	m, err := mf.NewManifest(*filename, *recursive, c)
+// Create manifestival resources and ReconcileKnativeEventingKafkaChannel, if necessary
+func (r *ReconcileKnativeEventingKafkaChannel) InjectClient(c client.Client) error {
+	m, err := mf.NewManifest(*channelFilename, *channelRecursive, c)
 	if err != nil {
 		return err
 	}
@@ -89,17 +88,17 @@ func (r *ReconcileKnativeEventingKafka) InjectClient(c client.Client) error {
 	return nil
 }
 
-// Reconcile reads that state of the cluster for a KnativeEventingKafka object and makes changes based on the state read
-// and what is in the KnativeEventingKafka.Spec
+// Reconcile reads that state of the cluster for a KnativeEventingKafkaChannel object and makes changes based on the state read
+// and what is in the KnativeEventingKafkaChannel.Spec
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileKnativeEventingKafka) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileKnativeEventingKafkaChannel) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling KnativeEventingKafka")
+	reqLogger.Info("Reconciling KnativeEventingKafkaChannel")
 
-	// Fetch the KnativeEventingKafka instance
-	instance := &eventingv1alpha1.KnativeEventingKafka{}
+	// Fetch the KnativeEventingKafkaChannel instance
+	instance := &operatorv1alpha1.KnativeEventingKafkaChannel{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -111,7 +110,7 @@ func (r *ReconcileKnativeEventingKafka) Reconcile(request reconcile.Request) (re
 	}
 
 	// stages hook for future work (e.g. deleteObsoleteResources)
-	stages := []func(*eventingv1alpha1.KnativeEventingKafka) error{
+	stages := []func(*operatorv1alpha1.KnativeEventingKafkaChannel) error{
 		r.initStatus,
 		r.install,
 		r.checkDeployments,
@@ -127,9 +126,9 @@ func (r *ReconcileKnativeEventingKafka) Reconcile(request reconcile.Request) (re
 }
 
 // Initialize status conditions
-func (r *ReconcileKnativeEventingKafka) initStatus(instance *eventingv1alpha1.KnativeEventingKafka) error {
+func (r *ReconcileKnativeEventingKafkaChannel) initStatus(instance *operatorv1alpha1.KnativeEventingKafkaChannel) error {
 	if len(instance.Status.Conditions) == 0 {
-		instance.Status.InitializeConditions()
+		operatorv1alpha1.InitializeConditions(&instance.Status)
 		if err := r.updateStatus(instance); err != nil {
 			return err
 		}
@@ -138,7 +137,7 @@ func (r *ReconcileKnativeEventingKafka) initStatus(instance *eventingv1alpha1.Kn
 }
 
 // Update the status subresource
-func (r *ReconcileKnativeEventingKafka) updateStatus(instance *eventingv1alpha1.KnativeEventingKafka) error {
+func (r *ReconcileKnativeEventingKafkaChannel) updateStatus(instance *operatorv1alpha1.KnativeEventingKafkaChannel) error {
 
 	// Account for https://github.com/kubernetes-sigs/controller-runtime/issues/406
 	gvk := instance.GroupVersionKind()
@@ -151,46 +150,46 @@ func (r *ReconcileKnativeEventingKafka) updateStatus(instance *eventingv1alpha1.
 }
 
 // Apply the embedded resources
-func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.KnativeEventingKafka) error {
+func (r *ReconcileKnativeEventingKafkaChannel) install(instance *operatorv1alpha1.KnativeEventingKafkaChannel) error {
 	// Transform resources as appropriate
 	fns := []mf.Transformer{
 		mf.InjectOwner(instance),
 		mf.InjectNamespace(instance.GetNamespace()),
-		addSCCforSpecialClusterRoles,
+		// TODO: probably not necessary
+		//addSCCforSpecialClusterRoles,
 		bootstrapServersTransformer(instance.Spec.BootstrapServers),
 	}
 	r.config.Transform(fns...)
 
-	if instance.Status.IsDeploying() {
+	if operatorv1alpha1.IsDeploying(&instance.Status) {
 		return nil
 	}
 	defer r.updateStatus(instance)
 
 	// Apply the resources in the YAML file
 	if err := r.config.ApplyAll(); err != nil {
-		instance.Status.MarkInstallFailed(err.Error())
+		operatorv1alpha1.MarkInstallFailed(&instance.Status, err.Error())
 		return err
 	}
 
-	if err := r.setAsDefaultChannel(
-		instance.Spec.SetAsDefaultChannelProvisioner); err != nil {
+	if err := r.setAsDefaultChannel(instance.Spec.SetAsDefaultChannelProvisioner); err != nil {
 		return err
 	}
 
 	// Update status
 	instance.Status.Version = version.Version
-	instance.Status.MarkInstallSucceeded()
+	operatorv1alpha1.MarkInstallSucceeded(&instance.Status)
 	log.Info("Install succeeded", "version", version.Version)
 	return nil
 }
 
 // Check for all deployments available
 // TODO: what about statefulsets?
-func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alpha1.KnativeEventingKafka) error {
+func (r *ReconcileKnativeEventingKafkaChannel) checkDeployments(instance *operatorv1alpha1.KnativeEventingKafkaChannel) error {
 	defer r.updateStatus(instance)
 	available := func(d *appsv1.Deployment) bool {
 		for _, c := range d.Status.Conditions {
-			if c.Type == appsv1.DeploymentAvailable && c.Status == v1.ConditionTrue {
+			if c.Type == appsv1.DeploymentAvailable && c.Status == corev1.ConditionTrue {
 				return true
 			}
 		}
@@ -201,29 +200,30 @@ func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alp
 		if u.GetKind() == "Deployment" {
 			key := client.ObjectKey{Namespace: u.GetNamespace(), Name: u.GetName()}
 			if err := r.client.Get(context.TODO(), key, deployment); err != nil {
-				instance.Status.MarkDeploymentsNotReady()
+				operatorv1alpha1.MarkDeploymentsNotReady(&instance.Status)
 				if errors.IsNotFound(err) {
 					return nil
 				}
 				return err
 			}
 			if !available(deployment) {
-				instance.Status.MarkDeploymentsNotReady()
+				operatorv1alpha1.MarkDeploymentsNotReady(&instance.Status)
 				return nil
 			}
 		}
 	}
-	instance.Status.MarkDeploymentsAvailable()
+	operatorv1alpha1.MarkDeploymentsAvailable(&instance.Status)
 	log.Info("All deployments are available")
 	return nil
 }
 
-func (r *ReconcileKnativeEventingKafka) setAsDefaultChannel(doSet bool) error {
+func (r *ReconcileKnativeEventingKafkaChannel) setAsDefaultChannel(doSet bool) error {
 	key := client.ObjectKey{Namespace: "knative-eventing", Name: "default-ch-webhook"}
 	result := &unstructured.Unstructured{}
 	result.SetAPIVersion("v1")
 	result.SetKind("ConfigMap")
 	if err := r.client.Get(context.TODO(), key, result); err != nil {
+		log.Error(err, "Unable to set or unset KafkaChannel as the default channel.")
 		return err
 	}
 	configMapData := result.Object["data"]
@@ -243,40 +243,7 @@ func (r *ReconcileKnativeEventingKafka) setAsDefaultChannel(doSet bool) error {
 	return err
 }
 
-func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
-
-	// these do need some openshift specific SCC
-	clusterRoles := []string{
-		"eventing-sources-kafka-controller",
-		"kafka-channelable-manipulator",
-		"kafka-ch-controller",
-		"kafka-ch-dispatcher",
-		"kafka-webhook",
-	}
-
-	matchesClusterRole := func(cr string) bool {
-		for _, i := range clusterRoles {
-			if cr == i {
-				return true
-			}
-		}
-		return false
-	}
-
-	// massage the roles that require SCC
-	if u.GetKind() == "ClusterRole" && matchesClusterRole(u.GetName()) {
-		field, _, _ := unstructured.NestedFieldNoCopy(u.Object, "rules")
-		// Required to properly run in OpenShift
-		unstructured.SetNestedField(u.Object, append(field.([]interface{}), map[string]interface{}{
-			"apiGroups":     []interface{}{"security.openshift.io"},
-			"verbs":         []interface{}{"use"},
-			"resources":     []interface{}{"securitycontextconstraints"},
-			"resourceNames": []interface{}{"privileged", "anyuid"},
-		}), "rules")
-	}
-	return nil
-}
-
+// bootstrapServersTransformer modifies the configmap for Knative's Kafka channel
 func bootstrapServersTransformer(bootstrapServers string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
 		if u.GetKind() == "ConfigMap" && u.GetName() == "config-kafka" {

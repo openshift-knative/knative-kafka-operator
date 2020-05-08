@@ -1,11 +1,15 @@
 # Knative Kafka Operator
 
-The following will install Knative Kafka and configure it
+This operator installs Knative Kafka related components on a cluster.
+
+The following will install both Knative Kafka Channel and Source controllers and configure them
 appropriately for your cluster in the `default` namespace:
 
-    kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_crd.yaml
+    kubectl apply -f deploy/crds/operator_v1alpha1_knativeeventingkafkachannel_crd.yaml
+    kubectl apply -f deploy/crds/operator_v1alpha1_knativeeventingkafkasource_crd.yaml
     kubectl apply -f deploy/
-    kubectl apply -f deploy/crds/eventing_v1alpha1_knativeeventingkafka_cr.yaml
+    kubectl apply -f deploy/crds/operator_v1alpha1_knativeeventingkafkachannel_cr.yaml
+    kubectl apply -f deploy/crds/operator_v1alpha1_knativeeventingkafkasource_cr.yaml
 
 ## Prerequisites
 
@@ -25,22 +29,38 @@ This operator was created using the
 [operator-sdk](https://github.com/operator-framework/operator-sdk/).
 It's not strictly required but does provide some handy tooling.
 
-## The KnativeEventingKafka Custom Resource
+## The KnativeEventingKafkaChannel Custom Resource
 
-The installation of Knative Kafka is triggered by the creation of
-[an `KnativeEventingKafka` custom
-resource](deploy/crds/eventing_v1alpha1_knativeeventingkafka_crd.yaml).
+The installation of Knative KafkaChannel support is triggered by the creation of
+[an `KnativeEventingKafkaChannel` custom
+resource](deploy/crds/operator_v1alpha1_knativeeventingkafkachannel_crd.yaml).
 
 The following are all equivalent, but the latter may suffer from name
 conflicts.
 
-    kubectl get knativeventingkafka.eventing.knative.dev -oyaml
-    kubectl get kek -oyaml
-    kubectl get knativeventingkafka -oyaml
+    kubectl get knativeeventingkafkachannel.operator.knative.dev -oyaml
+    kubectl get knativeeventingkafkachannel -oyaml
 
-To uninstall Knative Kafka, simply delete the `KnativeEventingKafka` resource.
+To uninstall Knative KafkaChannel, simply delete the `KnativeEventingKafkaChannel` resource.
 
-    kubectl delete kek --all
+    kubectl delete knativeeventingkafkachannel --all
+    
+    
+## The KnativeEventingKafkaSource Custom Resource
+
+The installation of Knative KafkaSource support is triggered by the creation of
+[an `KnativeEventingKafkaSource` custom
+resource](deploy/crds/operator_v1alpha1_knativeeventingkafkasource_crd.yaml).
+
+The following are all equivalent, but the latter may suffer from name
+conflicts.
+
+    kubectl get knativeeventingkafkasource.operator.knative.dev -oyaml
+    kubectl get knativeeventingkafkasource -oyaml
+
+To uninstall Knative KafkaSource, simply delete the `KnativeEventingKafkaSource` resource.
+
+    kubectl delete knativeeventingkafkasource --all
 
 ## Development
 
@@ -153,14 +173,22 @@ spec:
   name: knative-kafka-operator
   channel: alpha
 ---
-apiVersion: eventing.knative.dev/v1alpha1
-kind: KnativeEventingKafka
+apiVersion: operator.knative.dev/v1alpha1
+kind: KnativeEventingKafkaChannel
 metadata:
-  name: knative-eventing-kafka
+  name: knative-eventing-kafka-channel
   namespace: knative-eventing
 spec:
   bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
   #setAsDefaultChannelProvisioner: yes
+---
+apiVersion: operator.knative.dev/v1alpha1
+kind: KnativeEventingKafkaSource
+metadata:
+  name: knative-eventing-kafka-source
+  namespace: knative-eventing
+spec:
+  {}
 EOF
 ```
 
@@ -170,7 +198,7 @@ Make sure you updated `version/version.go` first.
 Also update `deploy/operator.yaml` with the new image.
 
 Replace the old files in `deploy/resources` with the new ones.
-(e.g. create `deploy/resources/kafka-channel-v0.12.1.yaml` with https://github.com/knative/eventing-contrib/releases/download/v0.12.1/kafka-channel.yaml) 
+(e.g. create `deploy/resources/channel/kafka-channel-v0.12.1.yaml` with https://github.com/knative/eventing-contrib/releases/download/v0.12.1/kafka-channel.yaml) 
 
 Then run these commands to generate OLM metadata for the new version of the operator:
 
@@ -198,7 +226,8 @@ Add following to the `deploy/olm-catalog/knative-kafka-operator/${CURRENT_VERSIO
 
 ```
 args:
-  - --filename=https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v${CURRENT_VERSION}/openshift/release/knative-eventing-kafka-contrib-v${CURRENT_VERSION}.yaml,https://raw.githubusercontent.com/openshift-knative/knative-kafka-operator/v${CURRENT_VERSION}/deploy/resources/networkpolicies.yaml
+  - --channel-filename=https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v${CURRENT_VERSION}/openshift/release/knative-eventing-kafka-channel-v${CURRENT_VERSION}.yaml,https://raw.githubusercontent.com/openshift-knative/knative-kafka-operator/v${CURRENT_VERSION}/deploy/resources/networkpolicies.yaml
+  - --source-filename=https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v${CURRENT_VERSION}/openshift/release/knative-eventing-kafka-source-v${CURRENT_VERSION}.yaml
 ```
 
 The `networkpolicies.yaml` file won't be there yet. However, with the release cut, it will be available.

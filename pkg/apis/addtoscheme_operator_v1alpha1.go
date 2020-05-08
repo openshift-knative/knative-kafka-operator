@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/openshift-knative/knative-kafka-operator/pkg/apis/eventing/v1alpha1"
+	"github.com/openshift-knative/knative-kafka-operator/pkg/apis/operator/v1alpha1"
 )
 
 func init() {

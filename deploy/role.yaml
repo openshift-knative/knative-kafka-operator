@@ -53,7 +53,7 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - eventing.knative.dev
+  - operator.knative.dev
   resources:
   - '*'
   verbs:

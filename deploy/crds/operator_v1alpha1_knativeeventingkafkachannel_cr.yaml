@@ -1,0 +1,7 @@
+apiVersion: operator.knative.dev/v1alpha1
+kind: KnativeEventingKafkaChannel
+metadata:
+  name: example-knativeeventingkafkachannel
+spec:
+  bootstrapServers: my-cluster-kafka-bootstrap.default.svc:9092
+  setAsDefaultChannelProvisioner: true

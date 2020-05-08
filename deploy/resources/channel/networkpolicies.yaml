@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-webhook
+  namespace: knative-eventing
+  labels:
+    app: kafka-webhook
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka-webhook
+  ingress:
+  - {}
+
