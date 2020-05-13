@@ -156,7 +156,6 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 	fns := []mf.Transformer{
 		mf.InjectOwner(instance),
 		mf.InjectNamespace(instance.GetNamespace()),
-		addSCCforSpecialClusterRoles,
 		bootstrapServersTransformer(instance.Spec.BootstrapServers),
 	}
 	r.config.Transform(fns...)
@@ -185,7 +184,6 @@ func (r *ReconcileKnativeEventingKafka) install(instance *eventingv1alpha1.Knati
 }
 
 // Check for all deployments available
-// TODO: what about statefulsets?
 func (r *ReconcileKnativeEventingKafka) checkDeployments(instance *eventingv1alpha1.KnativeEventingKafka) error {
 	defer r.updateStatus(instance)
 	available := func(d *appsv1.Deployment) bool {
@@ -241,40 +239,6 @@ func (r *ReconcileKnativeEventingKafka) setAsDefaultChannel(doSet bool) error {
 	configMap["default-ch-config"] = defaultChannelConfigValue
 	err := r.config.Apply(result)
 	return err
-}
-
-func addSCCforSpecialClusterRoles(u *unstructured.Unstructured) error {
-
-	// these do need some openshift specific SCC
-	clusterRoles := []string{
-		"eventing-sources-kafka-controller",
-		"kafka-channelable-manipulator",
-		"kafka-ch-controller",
-		"kafka-ch-dispatcher",
-		"kafka-webhook",
-	}
-
-	matchesClusterRole := func(cr string) bool {
-		for _, i := range clusterRoles {
-			if cr == i {
-				return true
-			}
-		}
-		return false
-	}
-
-	// massage the roles that require SCC
-	if u.GetKind() == "ClusterRole" && matchesClusterRole(u.GetName()) {
-		field, _, _ := unstructured.NestedFieldNoCopy(u.Object, "rules")
-		// Required to properly run in OpenShift
-		unstructured.SetNestedField(u.Object, append(field.([]interface{}), map[string]interface{}{
-			"apiGroups":     []interface{}{"security.openshift.io"},
-			"verbs":         []interface{}{"use"},
-			"resources":     []interface{}{"securitycontextconstraints"},
-			"resourceNames": []interface{}{"privileged", "anyuid"},
-		}), "rules")
-	}
-	return nil
 }
 
 func bootstrapServersTransformer(bootstrapServers string) mf.Transformer {
