@@ -1,5 +1,12 @@
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: knative-eventing
+  labels:
+    contrib.eventing.knative.dev/release: devel
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kafka-controller-manager
@@ -94,6 +101,18 @@ rules:
     - "mutatingwebhookconfigurations"
     - "validatingwebhookconfigurations"
   verbs: &everything
+    - "get"
+    - "list"
+    - "create"
+    - "update"
+    - "delete"
+    - "patch"
+    - "watch"
+- apiGroups:
+    - "apiextensions.k8s.io"
+  resources:
+    - "customresourcedefinitions"
+  verbs:
     - "get"
     - "list"
     - "create"
@@ -198,7 +217,13 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
-  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+  - name: v1beta1
+    served: true
+    storage: false
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -216,6 +241,11 @@ metadata:
   name: kafkasources.sources.knative.dev
 spec:
   group: sources.knative.dev
+  preserveUnknownFields: false
+  validation:
+    openAPIV3Schema:
+      type: object
+      x-kubernetes-preserve-unknown-fields: true
   names:
     categories:
     - all
@@ -227,6 +257,12 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  conversion:
+    strategy: Webhook
+    webhookClientConfig:
+      service:
+        name: kafka-source-webhook
+        namespace: knative-eventing
   additionalPrinterColumns:
     - name: Topics
       type: string
@@ -243,154 +279,13 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
-  validation:
-    openAPIV3Schema:
-      properties:
-        spec:
-          properties:
-            bootstrapServers:
-              type: array
-              minLength: 1
-            topics:
-              type: array
-              minLength: 1
-            consumerGroup:
-              type: string
-            net:
-              properties:
-                sasl:
-                  properties:
-                    enable:
-                      type: boolean
-                    password:
-                      properties:
-                        secretKeyRef:
-                          type: object
-                      type: object
-                    user:
-                      properties:
-                        secretKeyRef:
-                          type: object
-                      type: object
-                  type: object
-                tls:
-                  properties:
-                    caCert:
-                      properties:
-                        secretKeyRef:
-                          type: object
-                      type: object
-                    cert:
-                      properties:
-                        secretKeyRef:
-                          type: object
-                      type: object
-                    enable:
-                      type: boolean
-                    key:
-                      properties:
-                        secretKeyRef:
-                          type: object
-                      type: object
-                  type: object
-              type: object
-            resources:
-              properties:
-                limits:
-                  properties:
-                    cpu:
-                      type: string
-                    memory:
-                      type: string
-                  type: object
-                requests:
-                  properties:
-                    cpu:
-                      type: string
-                    memory:
-                      type: string
-                  type: object
-              type: object
-            serviceAccountName:
-              type: string
-            sink:
-              anyOf:
-              - type: object
-                description: "the destination that should receive events."
-                properties:
-                  ref:
-                    type: object
-                    description: "a reference to a Kubernetes object from which to retrieve the target URI."
-                    required:
-                    - apiVersion
-                    - kind
-                    - name
-                    properties:
-                      apiVersion:
-                        type: string
-                        minLength: 1
-                      kind:
-                        type: string
-                        minLength: 1
-                      name:
-                        type: string
-                        minLength: 1
-                  uri:
-                    type: string
-                    description: "the target URI. If ref is provided, this must be relative URI reference."
-              - type: object
-                description: "DEPRECATED: a reference to a Kubernetes object from which to retrieve the target URI."
-                required:
-                - apiVersion
-                - kind
-                - name
-                properties:
-                  apiVersion:
-                    type: string
-                    minLength: 1
-                  kind:
-                    type: string
-                    minLength: 1
-                  name:
-                    type: string
-                    minLength: 1
-                  uri:
-                    type: string
-                    description: "the target URI. If ref is provided, this must be relative URI reference."
-          type: object
-          required:
-              - bootstrapServers
-              - topics
-              - consumerGroup
-        status:
-          properties:
-            conditions:
-              items:
-                properties:
-                  lastTransitionTime:
-                    type: string
-                  message:
-                    type: string
-                  reason:
-                    type: string
-                  severity:
-                    type: string
-                  status:
-                    type: string
-                  type:
-                    type: string
-                required:
-                - type
-                - status
-                type: object
-              type: array
-            observedGeneration:
-              format: int64
-              type: integer
-            sinkUri:
-              type: string
-          type: object
-  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+  - name: v1beta1
+    served: true
+    storage: false
 ---
 apiVersion: v1
 kind: Service
@@ -427,20 +322,20 @@ spec:
       serviceAccountName: kafka-controller-manager
       containers:
       - name: manager
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.15.0
+        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.16.0
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
         - name: METRICS_DOMAIN
-          value: knative.dev/sources
+          value: knative.dev/eventing
         - name: CONFIG_OBSERVABILITY_NAME
           value: config-observability
         - name: CONFIG_LEADERELECTION_NAME
           value: config-leader-election-kafka
         - name: KAFKA_RA_IMAGE
-          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.15.0
+          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.16.0
         volumeMounts:
         resources:
           requests:
@@ -847,6 +742,18 @@ rules:
       - "get"
       - "list"
       - "watch"
+  - apiGroups:
+    - "apiextensions.k8s.io"
+    resources:
+    - "customresourcedefinitions"
+    verbs:
+    - "get"
+    - "list"
+    - "create"
+    - "update"
+    - "delete"
+    - "patch"
+    - "watch"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -912,7 +819,11 @@ metadata:
     duck.knative.dev/addressable: "true"
 spec:
   group: messaging.knative.dev
-  version: v1alpha1
+  preserveUnknownFields: false
+  validation:
+    openAPIV3Schema:
+      type: object
+      x-kubernetes-preserve-unknown-fields: true
   names:
     kind: KafkaChannel
     plural: kafkachannels
@@ -940,58 +851,13 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
-  validation:
-    openAPIV3Schema:
-      properties:
-        spec:
-          properties:
-            numPartitions:
-              format: int32
-              type: integer
-              description: "Number of partitions of a Kafka topic."
-            replicationFactor:
-              format: int16
-              type: integer
-              description: "Replication factor of a Kafka topic."
-            subscribable:
-              type: object
-              properties:
-                subscribers:
-                  type: array
-                  description: "The list of subscribers that have expressed interest in receiving events from this channel."
-                  items:
-                    required:
-                      - uid
-                    properties:
-                      ref:
-                        type: object
-                        required:
-                          - namespace
-                          - name
-                          - uid
-                        properties:
-                          apiVersion:
-                            type: string
-                          kind:
-                            type: string
-                          name:
-                            type: string
-                            minLength: 1
-                          namespace:
-                            type: string
-                            minLength: 1
-                          uid:
-                            type: string
-                            minLength: 1
-                      uid:
-                        type: string
-                        minLength: 1
-                      subscriberURI:
-                        type: string
-                        minLength: 1
-                      replyURI:
-                        type: string
-                        minLength: 1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+  - name: v1beta1
+    served: true
+    storage: false
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -1054,7 +920,7 @@ spec:
       serviceAccountName: kafka-ch-controller
       containers:
         - name: controller
-          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-controller:v0.15.0
+          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-controller:v0.16.0
           env:
             - name: CONFIG_LOGGING_NAME
               value: config-logging
@@ -1067,7 +933,7 @@ spec:
             - name: CONFIG_LEADERELECTION_NAME
               value: config-leader-election-kafka
             - name: DISPATCHER_IMAGE
-              value: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.15.0
+              value: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.16.0
           ports:
             - containerPort: 9090
               name: metrics
@@ -1142,7 +1008,7 @@ spec:
       containers:
       - name: kafka-webhook
         terminationMessagePolicy: FallbackToLogsOnError
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-webhook:v0.15.0
+        image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-webhook:v0.16.0
         env:
           - name: SYSTEM_NAMESPACE
             valueFrom:
