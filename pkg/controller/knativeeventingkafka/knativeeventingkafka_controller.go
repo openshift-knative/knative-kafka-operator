@@ -229,7 +229,7 @@ func (r *ReconcileKnativeEventingKafka) setAsDefaultChannel(doSet bool) error {
 	if !ok {
 		return go_errors.New("Unexpected structure of knative-eventing/default-ch-webhook ConfigMap")
 	}
-	defaultChannelConfigValue := "clusterDefault:\n  apiversion: messaging.knative.dev/v1alpha1\n  kind: "
+	defaultChannelConfigValue := "clusterDefault:\n  apiversion: messaging.knative.dev/v1beta1\n  kind: "
 	if doSet {
 		defaultChannelConfigValue += `KafkaChannel`
 	} else {
