@@ -1,12 +1,5 @@
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: knative-eventing
-  labels:
-    contrib.eventing.knative.dev/release: devel
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kafka-controller-manager
@@ -322,20 +315,20 @@ spec:
       serviceAccountName: kafka-controller-manager
       containers:
       - name: manager
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.16.0
+        image: quay.io/openshift-knative/knative-eventing-sources-kafka-source-controller:v0.17.1
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
         - name: METRICS_DOMAIN
-          value: knative.dev/eventing
+          value: knative.dev/sources
         - name: CONFIG_OBSERVABILITY_NAME
           value: config-observability
         - name: CONFIG_LEADERELECTION_NAME
           value: config-leader-election-kafka
         - name: KAFKA_RA_IMAGE
-          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.16.0
+          value: quay.io/openshift-knative/knative-eventing-sources-kafka-source-adapter:v0.17.1
         volumeMounts:
         resources:
           requests:
@@ -363,7 +356,8 @@ metadata:
   namespace: knative-eventing
 spec:
   ports:
-    - port: 443
+    - name: https-webhook
+      port: 443
       targetPort: 8443
   selector:
     control-plane: kafka-controller-manager
@@ -725,7 +719,7 @@ rules:
     resources:
       - "mutatingwebhookconfigurations"
       - "validatingwebhookconfigurations"
-    verbs:
+    verbs: &everything
       - "get"
       - "list"
       - "create"
@@ -743,17 +737,22 @@ rules:
       - "list"
       - "watch"
   - apiGroups:
-    - "apiextensions.k8s.io"
+      - "coordination.k8s.io"
     resources:
-    - "customresourcedefinitions"
+      - "leases"
+    verbs: *everything
+  - apiGroups:
+      - "apiextensions.k8s.io"
+    resources:
+      - "customresourcedefinitions"
     verbs:
-    - "get"
-    - "list"
-    - "create"
-    - "update"
-    - "delete"
-    - "patch"
-    - "watch"
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+      - "watch"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -858,6 +857,13 @@ spec:
   - name: v1beta1
     served: true
     storage: false
+  conversion:
+    strategy: Webhook
+    conversionReviewVersions: ["v1beta1", "v1alpha1"]
+    webhookClientConfig:
+      service:
+        name: kafka-webhook
+        namespace: knative-eventing
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -920,7 +926,7 @@ spec:
       serviceAccountName: kafka-ch-controller
       containers:
         - name: controller
-          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-controller:v0.16.0
+          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-controller:v0.17.1
           env:
             - name: CONFIG_LOGGING_NAME
               value: config-logging
@@ -933,7 +939,7 @@ spec:
             - name: CONFIG_LEADERELECTION_NAME
               value: config-leader-election-kafka
             - name: DISPATCHER_IMAGE
-              value: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.16.0
+              value: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.17.1
           ports:
             - containerPort: 9090
               name: metrics
@@ -944,6 +950,72 @@ spec:
         - name: config-logging
           configMap:
             name: config-logging
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ch-dispatcher
+  namespace: knative-eventing
+  labels:
+    eventing.knative.dev/release: devel
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      messaging.knative.dev/channel: kafka-channel
+      messaging.knative.dev/role: dispatcher
+  template:
+    metadata:
+      labels:
+        messaging.knative.dev/channel: kafka-channel
+        messaging.knative.dev/role: dispatcher
+        eventing.knative.dev/release: devel
+    spec:
+      containers:
+        - name: dispatcher
+          image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-dispatcher:v0.17.1
+          env:
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: METRICS_DOMAIN
+              value: "knative.dev/eventing"
+            - name: CONFIG_LOGGING_NAME
+              value: "config-logging"
+            - name: CONFIG_LEADERELECTION_NAME
+              value: "config-leader-election-kafka"
+          ports:
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            - name: config-kafka
+              mountPath: /etc/config-kafka
+      serviceAccountName: kafka-ch-dispatcher
+      volumes:
+        - name: config-kafka
+          configMap:
+            name: config-kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    messaging.knative.dev/channel: kafka-channel
+    messaging.knative.dev/role: dispatcher
+  name: kafka-ch-dispatcher
+  namespace: knative-eventing
+spec:
+  ports:
+  - name: http-dispatcher
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    messaging.knative.dev/channel: kafka-channel
+    messaging.knative.dev/role: dispatcher
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
@@ -1008,7 +1080,7 @@ spec:
       containers:
       - name: kafka-webhook
         terminationMessagePolicy: FallbackToLogsOnError
-        image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-webhook:v0.16.0
+        image: quay.io/openshift-knative/knative-eventing-sources-kafka-channel-webhook:v0.17.1
         env:
           - name: SYSTEM_NAMESPACE
             valueFrom:
@@ -1020,9 +1092,15 @@ spec:
             value: knative.dev/eventing
           - name: WEBHOOK_NAME
             value: kafka-webhook
+          - name: WEBHOOK_PORT
+            value: "8443"
         ports:
-          - containerPort: 9090
-            name: metrics
+          - name: https-webhook
+            containerPort: 8443
+          - name: metrics
+            containerPort: 9090
+          - name: profiling
+            containerPort: 8008
         readinessProbe: &probe
           periodSeconds: 1
           httpGet:
@@ -1032,3 +1110,4 @@ spec:
             - name: k-kubelet-probe
               value: "webhook"
         livenessProbe: *probe
+      terminationGracePeriodSeconds: 300
