@@ -342,7 +342,9 @@ spec:
             httpHeaders:
             - name: k-kubelet-probe
               value: "webhook"
-        livenessProbe: *probe
+        livenessProbe:
+          <<: *probe
+          initialDelaySeconds: 20
       serviceAccount: kafka-controller-manager
       terminationGracePeriodSeconds: 10
 ---
@@ -1109,5 +1111,7 @@ spec:
             httpHeaders:
             - name: k-kubelet-probe
               value: "webhook"
-        livenessProbe: *probe
+        livenessProbe:
+          <<: *probe
+          initialDelaySeconds: 20
       terminationGracePeriodSeconds: 300
